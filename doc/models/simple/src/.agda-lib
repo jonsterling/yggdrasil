@@ -1,0 +1,4 @@
+name: yggdrasil-simple
+include:
+  .
+  ../modules/agda-prelude/src
