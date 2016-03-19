@@ -92,7 +92,7 @@ mutual
 
   data _⊢_∈_⇒_ (Γ : Ctx) : (t : Tree) (σ* : List Tree) (τ : Tree) → Set where
     ▸ε
-      : (τ : Tp)
+      : {τ : Tp}
       → Γ ⊢ ▸ε τ ∈ (▸ε τ ∷ []) ⇒ (▸ε τ)
     ▸ψ
       : {ϑ : Op}{ω : Forest}{σ* τ* : List Tree}{τ : Tree}
