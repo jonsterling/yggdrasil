@@ -47,13 +47,26 @@ record Arity : Set where
     tgt : Tree
 open Arity public
 
-record Decl : Set where
-  no-eta-equality
-  constructor ▸δ#
-  field
-    ϑ : Op
-    α : Arity
-pattern ▸δ ϑ σ τ = ▸δ# (▸op ϑ) (▸ar σ τ)
+module Decl where
+  record Decl : Set where
+    no-eta-equality
+    constructor ▸δ#
+    field
+      ϑ : Op
+      α : Arity
+  open Decl public
+  pattern ▸δ ϑ σ τ = ▸δ# (▸op ϑ) (▸ar σ τ)
+
+  ∂- : Decl → List Tree
+  ∂- (▸δ ϑ σ τ) = σ
+
+  ∂+ : Decl → Tree
+  ∂+ (▸δ ϑ σ τ) = τ
+open Decl public
+  hiding (module Decl)
+  using (Decl)
+  using (▸δ#)
+  using (▸δ)
 
 module Sig where
   Sig : Set
