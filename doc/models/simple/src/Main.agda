@@ -392,5 +392,5 @@ module Test where
       (⊕.inr
         ( []
         ▸ ▸ψ (▸op "bool") ▸ε
-        ▸ ▸ψ refl (▸φ (▸ψ refl ▸ε) (▸φ (▸ψ refl ▸ε) ▸ε))))
+        ▸ ▸ψ≡ "and" (▸φ (▸ψ≡ "ff" ▸ε) (▸φ (▸ψ≡ "ff" ▸ε) ▸ε))))
   test₄ = refl
