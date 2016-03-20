@@ -6,58 +6,14 @@ open import Prelude.Bool
 open import Prelude.Decidable
 open import Prelude.Inspect
 open import Prelude.List
-  hiding (module List)
+open import Prelude.Maybe
 open import Prelude.Monoidal
 open import Prelude.Path
 open import Prelude.Size
 open import Prelude.String
 
-module List where
-  open Prelude.List.List public
-
-  infix 0 _⊢_≟_
-
-  ∷-inj
-    : {A : Set}{x y : A}{xs ys : List A}
-    → x ∷ xs ≡ y ∷ ys
-    → (x ≡ y) ⊗ (xs ≡ ys)
-  ∷-inj refl = refl , refl
-
-  _⊢_≟_
-    : {A : Set}
-    → (φ : (x y : A) → Decidable (x ≡ y))
-    → (xs ys : List A)
-    → Decidable (xs ≡ ys)
-  φ ⊢ [] ≟ [] =
-    ⊕.inr refl
-  φ ⊢ [] ≟ (_ ∷ _) =
-    ⊕.inl λ()
-  φ ⊢ (_ ∷ _) ≟ [] =
-    ⊕.inl λ()
-  φ ⊢ (x ∷ xs) ≟ (y ∷ ys) with φ x y
-  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inl κ₀ =
-    ⊕.inl λ π → κ₀ (⊗.fst (∷-inj π))
-  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ with φ ⊢ xs ≟ ys
-  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ | ⊕.inl κ₁ =
-    ⊕.inl λ π₁ → κ₁ (⊗.snd (∷-inj π₁))
-  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ | ⊕.inr π₁ =
-    ⊕.inr (≡.ap¹ (_∷ xs) π₀ ≡.⟓ ≡.ap¹ (y ∷_) π₁)
-
 open List
   using (_++_)
-
-data Maybe (A : Set) : Set where
-  no : Maybe A
-  so : (a : A) → Maybe A
-
-so-inj
-  : {A : Set}{a₀ a₁ : A}
-  → so a₀ ≡ so a₁
-  → a₀ ≡ a₁
-so-inj refl = refl
-
-no≢so : {A : Set}{a : A} (φ : no ≡ so a) → 𝟘
-no≢so ()
 
 Name : Set
 Name = String
@@ -248,7 +204,7 @@ mutual
     refl , refl
   ⊢tree-unique (▸ψ ⊢ϑ₀ ⊢ω₀) (▸ψ ⊢ϑ₁ ⊢ω₁) with ⊢forest-unique ⊢ω₀ ⊢ω₁
   ⊢tree-unique (▸ψ ⊢ϑ₀ ⊢ω₀) (▸ψ ⊢ϑ₁ ⊢ω₁) | refl , refl =
-    refl , (⊗.snd (▸ar-inj (so-inj (⊢ϑ₀ ≡.⁻¹ ≡.⟓ ⊢ϑ₁))))
+    refl , (⊗.snd (▸ar-inj (Maybe.⊢.so-inj (⊢ϑ₀ ≡.⁻¹ ≡.⟓ ⊢ϑ₁))))
 
   ⊢forest-unique
     : {Γ : Ctx}{ω : Forest}{σ₀* σ₁* τ₀* τ₁* : List Tree}
@@ -288,7 +244,7 @@ mutual
     ⊕.inr ((▸ε ● ∷ []) ▸ (▸ε ●) ▸ ▸ε ●)
   tree-inf-inf Γ (▸ψ ϑ ω) with Ctx.look Γ ϑ | inspect (Ctx.look Γ) ϑ
   tree-inf-inf Γ (▸ψ ϑ ω) | no | [ ⊢ϑ ] =
-    ⊕.inl λ { (σ ▸ τ ▸ ▸ψ ⊢ϑ′ ⊢ω) → no≢so (⊢ϑ ≡.⁻¹ ≡.⟓ ⊢ϑ′) }
+    ⊕.inl λ { (σ ▸ τ ▸ ▸ψ ⊢ϑ′ ⊢ω) → Maybe.⊢.no≢so (⊢ϑ ≡.⁻¹ ≡.⟓ ⊢ϑ′) }
   tree-inf-inf Γ (▸ψ ϑ ω) | so (▸ar τ* τ) | [ ⊢ϑ ] with forest-inf-chk Γ τ* ω
   tree-inf-inf Γ (▸ψ ϑ ω) | so (▸ar τ* τ) | [ ⊢ϑ ] | ⊕.inl κ =
     ⊕.inl λ
@@ -296,7 +252,7 @@ mutual
           (σ* ▸
             ≡.coe*
               (λ X → Γ ⊩ ω ∈ σ* ⇉ X)
-              (⊗.fst (▸ar-inj (so-inj (⊢ϑ′ ≡.⁻¹ ≡.⟓ ⊢ϑ))))
+              (⊗.fst (▸ar-inj (Maybe.⊢.so-inj (⊢ϑ′ ≡.⁻¹ ≡.⟓ ⊢ϑ))))
               ⊢ω)
       }
   tree-inf-inf Γ (▸ψ ϑ ω) | so (▸ar τ* τ) | [ φ ] | ⊕.inr (σ* ▸ ⊢ω) =
