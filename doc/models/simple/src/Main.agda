@@ -1,13 +1,47 @@
 {-# OPTIONS --experimental-irrelevance --type-in-type #-}
 module Main where
 
+open import Agda.Primitive
 open import Prelude.Bool
 open import Prelude.Decidable
 open import Prelude.Inspect
 open import Prelude.List
+  hiding (module List)
 open import Prelude.Monoidal
 open import Prelude.Path
+open import Prelude.Size
 open import Prelude.String
+
+module List where
+  open Prelude.List.List public
+
+  infix 0 _⊢_≟_
+
+  ∷-inj
+    : {A : Set}{x y : A}{xs ys : List A}
+    → x ∷ xs ≡ y ∷ ys
+    → (x ≡ y) ⊗ (xs ≡ ys)
+  ∷-inj refl = refl , refl
+
+  _⊢_≟_
+    : {A : Set}
+    → (φ : (x y : A) → Decidable (x ≡ y))
+    → (xs ys : List A)
+    → Decidable (xs ≡ ys)
+  φ ⊢ [] ≟ [] =
+    ⊕.inr refl
+  φ ⊢ [] ≟ (_ ∷ _) =
+    ⊕.inl λ()
+  φ ⊢ (_ ∷ _) ≟ [] =
+    ⊕.inl λ()
+  φ ⊢ (x ∷ xs) ≟ (y ∷ ys) with φ x y
+  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inl κ₀ =
+    ⊕.inl λ π → κ₀ (⊗.fst (∷-inj π))
+  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ with φ ⊢ xs ≟ ys
+  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ | ⊕.inl κ₁ =
+    ⊕.inl λ π₁ → κ₁ (⊗.snd (∷-inj π₁))
+  φ ⊢ x ∷ xs ≟ y ∷ ys | ⊕.inr π₀ | ⊕.inr π₁ =
+    ⊕.inr (≡.ap¹ (_∷ xs) π₀ ≡.⟓ ≡.ap¹ (y ∷_) π₁)
 
 open List
   using (_++_)
@@ -40,13 +74,103 @@ mutual
     ▸φ : (ψ : Tree) (ω : Forest) → Forest
 
   data Tree : Set where
-    ▸ε : (● : Tp) → Tree
+    ▸ε : (τ : Tp) → Tree
     ▸ψ : (ϑ : Op) (ω : Forest) → Tree
 
-postulate
-  forest-≟ : (ω₀ ω₁ : Forest) → Decidable (ω₀ ≡ ω₁)
-  tree-≟ : (ψ₀ ψ₁ : Tree) → Decidable (ψ₀ ≡ ψ₁)
-  tree*-≟ : (ψ₀* ψ₁* : List Tree) → Decidable (ψ₀* ≡ ψ₁*)
+forest-▸ε-inj
+  : {ψ₀* ψ₁* : List Tree}
+  → _≡_ {A = Forest} (▸ε ψ₀*) (▸ε ψ₁*)
+  → ψ₀* ≡ ψ₁*
+forest-▸ε-inj refl = refl
+
+forest-▸φ-inj
+  : {ψ₀ ψ₁ : Tree}{ω₀ ω₁ : Forest}
+  → ▸φ ψ₀ ω₀ ≡ ▸φ ψ₁ ω₁
+  → (ψ₀ ≡ ψ₁) ⊗ (ω₀ ≡ ω₁)
+forest-▸φ-inj refl = refl , refl
+
+tree-▸ε-inj
+  : {τ₀ τ₁ : Tp}
+  → _≡_ {A = Tree} (▸ε τ₀) (▸ε τ₁)
+  → τ₀ ≡ τ₁
+tree-▸ε-inj refl = refl
+
+tree-▸ψ-inj
+  : {ϑ₀ ϑ₁ : Op}{ω₀ ω₁ : Forest}
+  → ▸ψ ϑ₀ ω₀ ≡ ▸ψ ϑ₁ ω₁
+  → (ϑ₀ ≡ ϑ₁) ⊗ (ω₀ ≡ ω₁)
+tree-▸ψ-inj refl = refl , refl
+
+▸tp-inj
+  : {τ₀ τ₁ : Name}
+  → ▸tp τ₀ ≡ ▸tp τ₁
+  → τ₀ ≡ τ₁
+▸tp-inj refl = refl
+
+▸op-inj
+  : {ϑ₀ ϑ₁ : Name}
+  → ▸op ϑ₀ ≡ ▸op ϑ₁
+  → ϑ₀ ≡ ϑ₁
+▸op-inj refl = refl
+
+tp-eq
+  : (τ₀ τ₁ : Tp)
+  → Decidable (τ₀ ≡ τ₁)
+tp-eq (▸tp τ₀) (▸tp τ₁) with τ₀ String.≟ τ₁
+tp-eq (▸tp τ₀) (▸tp τ₁) | ⊕.inl κ =
+  ⊕.inl λ π → κ (▸tp-inj π)
+tp-eq (▸tp τ₀) (▸tp τ₁) | ⊕.inr π =
+  ⊕.inr (≡.ap¹ ▸tp π)
+
+op-eq
+  : (ϑ₀ ϑ₁ : Op)
+  → Decidable (ϑ₀ ≡ ϑ₁)
+op-eq (▸op ϑ₀) (▸op ϑ₁) with ϑ₀ String.≟ ϑ₁
+op-eq (▸op ϑ₀) (▸op ϑ₁) | ⊕.inl κ =
+  ⊕.inl λ π → κ (▸op-inj π)
+op-eq (▸op ϑ₀) (▸op ϑ₁) | ⊕.inr π =
+  ⊕.inr (≡.ap¹ ▸op π)
+
+{-# TERMINATING #-}
+-- FIXME: could fix this by defining list locally but probably not worth it
+mutual
+  forest-eq : (ω₀ ω₁ : Forest) → Decidable (ω₀ ≡ ω₁)
+  forest-eq (▸ε ψ₀*) (▸ε ψ₁*) with tree-eq List.⊢ ψ₀* ≟ ψ₁*
+  forest-eq (▸ε ψ₀*) (▸ε ψ₁*) | ⊕.inl κ₀ =
+    ⊕.inl λ π₀ → κ₀ (forest-▸ε-inj π₀)
+  forest-eq (▸ε ψ₀*) (▸ε ψ₁*) | ⊕.inr π =
+    ⊕.inr (≡.ap¹ ▸ε π)
+  forest-eq (▸ε ψ₀*) (▸φ ψ₁ ω₁) =
+    ⊕.inl λ()
+  forest-eq (▸φ ψ₀ ω₀) (▸ε ψ₁*) =
+    ⊕.inl λ()
+  forest-eq (▸φ ψ₀ ω₀) (▸φ ψ₁ ω₁) with tree-eq ψ₀ ψ₁
+  forest-eq (▸φ ψ₀ ω₀) (▸φ ψ₁ ω₁) | ⊕.inl κ₀ =
+    ⊕.inl λ π₀ → κ₀ (⊗.fst (forest-▸φ-inj π₀))
+  forest-eq (▸φ ψ₀ ω₀) (▸φ ψ₁ ω₁) | ⊕.inr π₀ with forest-eq ω₀ ω₁
+  forest-eq (▸φ ψ₀ ω₀) (▸φ ψ₁ ω₁) | ⊕.inr π₀ | ⊕.inl κ₁ =
+    ⊕.inl λ π₁ → κ₁ (⊗.snd (forest-▸φ-inj π₁))
+  forest-eq (▸φ ψ₀ ω₀) (▸φ ψ₁ ω₁) | ⊕.inr π₀ | ⊕.inr π₁ =
+    ⊕.inr (≡.ap¹ (λ x → ▸φ x _) π₀ ≡.⟓ ≡.ap¹ (▸φ _) π₁)
+
+  tree-eq : (ψ₀ ψ₁ : Tree) → Decidable (ψ₀ ≡ ψ₁)
+  tree-eq (▸ε τ₀) (▸ε τ₁) with tp-eq τ₀ τ₁
+  tree-eq (▸ε τ₀) (▸ε τ₁) | ⊕.inl κ =
+    ⊕.inl λ π → κ (tree-▸ε-inj π)
+  tree-eq (▸ε τ₀) (▸ε τ₁) | ⊕.inr π =
+    ⊕.inr (≡.ap¹ ▸ε π)
+  tree-eq (▸ε τ₀) (▸ψ ϑ₁ ω₁) =
+    ⊕.inl λ()
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ε τ₁) =
+    ⊕.inl λ()
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ψ ϑ₁ ω₁) with op-eq ϑ₀ ϑ₁
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ψ ϑ₁ ω₁) | ⊕.inl κ₀ =
+    ⊕.inl λ π → κ₀ (⊗.fst (tree-▸ψ-inj π))
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ψ ϑ₁ ω₁) | ⊕.inr π₀ with forest-eq ω₀ ω₁
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ψ ϑ₁ ω₁) | ⊕.inr π₀ | ⊕.inl κ₁ =
+    ⊕.inl λ π₁ → κ₁ (⊗.snd (tree-▸ψ-inj π₁))
+  tree-eq (▸ψ ϑ₀ ω₀) (▸ψ ϑ₁ ω₁) | ⊕.inr π₀ | ⊕.inr π₁ =
+    ⊕.inr (≡.ap¹ (λ x → ▸ψ x _) π₀ ≡.⟓ ≡.ap¹ (▸ψ _) π₁)
 
 record Arity : Set where
   no-eta-equality
@@ -121,7 +245,7 @@ mutual
   tree-inf-chk Γ τ ψ with tree-inf-inf Γ ψ
   tree-inf-chk Γ τ ψ | ⊕.inl κ =
     ⊕.inl λ { (σ* ▸ ⊢ψ) → κ (σ* ▸ τ ▸ ⊢ψ) }
-  tree-inf-chk Γ τ ψ | ⊕.inr (σ* ▸ τ′ ▸ ⊢ψ) with tree-≟ τ τ′
+  tree-inf-chk Γ τ ψ | ⊕.inr (σ* ▸ τ′ ▸ ⊢ψ) with tree-eq τ τ′
   tree-inf-chk Γ τ ψ | ⊕.inr (σ* ▸ τ′ ▸ ⊢ψ) | ⊕.inl κ =
     ⊕.inl λ { (_ ▸ ⊢ψ) → {!!} } -- determinacy
   tree-inf-chk Γ τ ψ | ⊕.inr (σ* ▸ .τ ▸ ⊢ψ) | ⊕.inr refl =
@@ -147,7 +271,7 @@ mutual
     → (τ* : List Tree)
     → (ω : Forest)
     → Decidable (Σ[ List Tree ∋ σ* ] (Γ ⊩ ω ∈ σ* ⇉ τ*))
-  forest-inf-chk Γ τ* (▸ε ψ*) with tree*-≟ ψ* τ*
+  forest-inf-chk Γ τ* (▸ε ψ*) with tree-eq List.⊢ ψ* ≟ τ*
   forest-inf-chk Γ τ* (▸ε ψ*) | ⊕.inl κ =
     ⊕.inl λ { (ψ′* ▸ ⊢ω) → κ {!!} } -- determinacy via ▸ε
   forest-inf-chk Γ τ* (▸ε .τ*) | ⊕.inr refl =
@@ -156,10 +280,10 @@ mutual
     ⊕.inl λ { (_ ▸ ()) }
   forest-inf-chk Γ (τ ∷ τ*) (▸φ ψ ω) with tree-inf-chk Γ τ ψ
   forest-inf-chk Γ (τ ∷ τ*) (▸φ ψ ω) | ⊕.inl κ =
-    ⊕.inl {!!}
+    ⊕.inl λ π → {!!}
   forest-inf-chk Γ (τ ∷ τ*) (▸φ ψ ω) | ⊕.inr ⊢ψ with forest-inf-chk Γ τ* ω
   forest-inf-chk Γ (τ ∷ τ*) (▸φ ψ ω) | ⊕.inr ⊢ψ | ⊕.inl ⊢ω =
-    ⊕.inl {!!}
+    ⊕.inl λ π → {!!}
   forest-inf-chk Γ (τ ∷ τ*) (▸φ ψ ω) | ⊕.inr (σ*λ ▸ ⊢ψ) | ⊕.inr (σ*ρ ▸ ⊢ω) =
     ⊕.inr (σ*λ ++ σ*ρ ▸ ▸φ ⊢ψ ⊢ω)
 
