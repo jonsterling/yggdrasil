@@ -1,3 +1,14 @@
+;; Example syntax
+;;
+;; ideas:
+;; - auto declare invertible cells with syntax like (=face foo bar) vs (>face foo bar)
+;; - auto declare groupoid structure (maybe more structure even?)
+;; - function definition with inline cell declaration syntax
+;; - something like absurd patterns for coverage checking
+;; - make face annotations optional (try to infer)
+;; - binding and closures
+;; - metavariables
+
 (sign arithmetic
   (cell/0 nat
     (face *))
