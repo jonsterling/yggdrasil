@@ -1,12 +1,35 @@
 (sign arithmetic
   (cell/0 nat
     (face * *))
+
   (cell/1 zero
     (face [] [nat]))
   (cell/1 succ
     (face [nat] [nat]))
   (cell/1 add
     (face [nat nat] [nat]))
+
+  (cell/2 gpd/idn
+    (face [M] [M])
+    (data
+      (cell/1 M (face [] [nat]))))
+  (cell/2 gpd/seq
+    (face [M] [O])
+    (data
+      (cell/1 [M N O] (face [] [nat]))
+      (cell/2 P (face [M] [N]))
+      (cell/2 Q (face [N] [O]))))
+  (cell/2 gpd/inv
+    (face [N] [M])
+    (data
+      (cell/1 [M N] (face [] [nat]))
+      (cell/2 P (face [M] [N]))))
+
+  (cell/2 succ/cong
+    (face [(succ M)] [(succ N)])
+    (data
+      (cell/1 [M N] (face [] [nat]))
+      (cell/2 P (face [M] [N]))))
   (cell/2 add/zero
     (face [(add M zero)] [M])
     (data
@@ -16,6 +39,14 @@
     (data
       (cell/1 [M N O] (face [] [nat]))
       (cell/2 add/rec (face [(add M N)] [O]))))
-  (fun add (face [nat nat] [nat])
+
+  (fun/1 add (face [nat nat] [nat])
     (case */zero)
-    (case */succ)))
+    (case */succ))
+
+  (def/1 one (face [] [nat]) (succ zero))
+  (def/1 two (face [] [nat]) (succ one))
+  (def/1 three (face [] [nat]) (succ two))
+  (def/1 four (face [] [nat]) (succ three))
+  (def/2 add/two/two/four (face [(add two two)] [four])
+    (add/succ {two one three (add/succ {two zero two (add/zero {two})})})))
