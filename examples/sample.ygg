@@ -36,7 +36,7 @@
       (cell/1 [M N] (face nat))
       (cell/2 P (face M N))))
 
-  (cell/2 succ/cong
+  (cell/2 cong/succ
     (face (succ M) (succ N))
     (data
       (cell/1 [M N] (face nat))
