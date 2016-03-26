@@ -8,14 +8,14 @@
   (cell/1 add
     (face [nat nat] [nat]))
   (cell/2 add/zero
+    (face [(add M zero)] [M])
     (data
-      (cell/1 M (face [] [nat])))
-    (face [(add M zero)] [M]))
+      (cell/1 M (face [] [nat]))))
   (cell/2 add/succ
+    (face [(add M (succ N))] [(succ O)])
     (data
       (cell/1 [M N O] (face [] [nat]))
-      (cell/2 add/rec (face [(add M N)] [O])))
-    (face [(add M (succ N))] [(succ O)]))
+      (cell/2 add/rec (face [(add M N)] [O]))))
   (fun add (face [nat nat] [nat])
     (case */zero)
     (case */succ)))
