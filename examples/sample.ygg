@@ -16,6 +16,6 @@
       (cell/1 [M N O] (face [] [nat]))
       (cell/2 add/rec (face [(add M N)] [O])))
     (face [(add M (succ N))] [(succ O)]))
-  (fun add
+  (fun add (face [nat nat] [nat])
     (case */zero)
     (case */succ)))
