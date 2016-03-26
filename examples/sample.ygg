@@ -44,9 +44,14 @@
     (case */zero)
     (case */succ))
 
-  (def/1 one (face nat) (succ zero))
-  (def/1 two (face nat) (succ one))
-  (def/1 three (face nat) (succ two))
-  (def/1 four (face nat) (succ three))
+  (def/1 one (face nat)
+    (succ zero))
+  (def/1 two (face nat)
+    (succ one))
+  (def/1 three (face nat)
+    (succ two))
+  (def/1 four (face nat)
+    (succ three))
+
   (def/2 add/two/two/four (face (add two two) four)
     (add/succ {two one three (add/succ {two zero two (add/zero {two})})})))
