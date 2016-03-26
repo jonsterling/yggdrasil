@@ -1,0 +1,21 @@
+(sign arithmetic
+  (cell/0 nat
+    (face * *))
+  (cell/1 zero
+    (face [] [nat]))
+  (cell/1 succ
+    (face [nat] [nat]))
+  (cell/1 add
+    (face [nat nat] [nat]))
+  (cell/2 add/zero
+    (data
+      (cell/1 M (face [] [nat])))
+    (face [(add M zero)] [M]))
+  (cell/2 add/succ
+    (data
+      (cell/1 [M N O] (face [] [nat]))
+      (cell/2 add/rec (face [(add M N)] [O])))
+    (face [(add M (succ N))] [(succ O)]))
+  (fun add
+    (case */zero)
+    (case */succ)))
