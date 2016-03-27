@@ -1,68 +1,152 @@
 ;; Example syntax
 ;;
+;; Note: this is purely fictional
+;;
 ;; ideas:
 ;; - auto declare invertible cells with syntax like (=face foo bar) vs (>face foo bar)
-;; - auto declare groupoid structure (maybe more structure even?)
+;; - auto declare groupoid structure (more free operad structure?)
+;; - builtins? (also relevant for free structure)
 ;; - function definition with inline cell declaration syntax
 ;; - something like absurd patterns for coverage checking
 ;; - make face annotations optional (try to infer)
+;; - make dimension annotations optional (should be easy compared to faces)
 ;; - binding and closures
 ;; - metavariables
+;; - modules vs signatures
+;; - functors and signature morphisms
+;; - universes
+;; - scopes or sections
+;; - pattern aliases
+;; - display forms
+;; - display graphs (probably a different mechanism from display forms)
+;; - filling/composition
 
-(sign arithmetic
-  (cell/0 nat
-    (face *))
+(module Arithmetic
+  ;; So what is the difference between a module and a signature?
+  ;; - should have something to do with universes
+  ;; - opetopic monoidal ops are given with respect to signatures not modules
+  ;; - multi-globularity coherence also given with respect to signatures
 
-  (cell/1 zero
-    (face nat))
-  (cell/1 succ
-    (face nat nat))
-  (cell/1 add
-    (face [nat nat] nat))
+  ;; The idea is that a signature here is like a many-to-one computad or
+  ;; multitopic set given by a sequence of signatures in subsequent dimensions.
+  ;; Among other things, this sequence of signatures must satisfy a certain
+  ;; multi-globularity condition stating that the frame of each cell
+  ;; (i.e., the domain pasting diagram of infaces and codomain outface) consist
+  ;; of parallel cells in the dimension below.
 
-  (cell/2 gpd/idn
-    (face M M)
-    (data
-      (cell/1 M (face nat))))
-  (cell/2 gpd/seq
-    (face M O)
-    (data
-      (cell/1 [M N O] (face nat))
-      (cell/2 P (face M N))
-      (cell/2 Q (face N O))))
-  (cell/2 gpd/inv
-    (face N M)
-    (data
-      (cell/1 [M N] (face nat))
-      (cell/2 P (face M N))))
+  ;; This condition is somewhat tricky to state precisely in the case of
+  ;; multitopic cells like we use below but one way to understand what it
+  ;; should look like intuitively is to consider computad globularity where a
+  ;; given cell is multi-to-one.
 
-  (cell/2 cong/succ
-    (face (succ M) (succ N))
-    (data
-      (cell/1 [M N] (face nat))
-      (cell/2 P (face M N))))  
-  (cell/2 add/zero
-    (face (add M zero) M)
-    (data
-      (cell/1 M (face nat))))
-  (cell/2 add/succ
-    (face (add M (succ N)) (succ O))
-    (data
-      (cell/1 [M N O] (face nat))
-      (cell/2 add/rec (face (add M N) O))))
+  ;; The type checker will verify that cells satisfy this coherence property
+  ;; automatically. For the moment, the intention is to specify dimensions
+  ;; in order to make this a little more straightforward and efficient.
+  ;; However, the dimensions should always be inferrable as long as the
+  ;; faces themselves are specified.
 
-  (fun/1 add (face [nat nat] nat)
-    (case */zero)
-    (case */succ))
+  ;; When signatures satisfy certain properties similar to horn filling for
+  ;; Kan complexes, they correspond to weak n-categories. The property requires
+  ;; that all niches (i.e., cell frames considered without the outface) can be
+  ;; extended to a universal cell which is then considered as the composite of
+  ;; the infaces. Composites of universal cells must also be universal.
 
-  (def/1 one (face nat)
-    (succ zero))
-  (def/1 two (face nat)
-    (succ one))
-  (def/1 three (face nat)
-    (succ two))
-  (def/1 four (face nat)
-    (succ three))
+  ;; Additional structure for filling and composition is not detailed yet.
 
-  (def/2 add/two/two/four (face (add two two) four)
-    (add/succ {two one three (add/succ {two zero two (add/zero {two})})})))
+  ;; The syntax for a cell declaration is
+  ;;
+  ;; (∂ name dim
+  ;;   (⇒ dom cod)
+  ;;   (data
+  ;;     (field)
+  ;;        ⋮
+  ;;     (field)))
+  ;;
+  ;; where
+  ;;   "name"  is the name of the cell
+  ;;   "dim"   is the dimension
+  ;;   "dom"   is the pasting diagram of input faces
+  ;;   "cod"   is the output face
+  ;;   "field" is a sub-cell as a data field
+
+  ;; The idea behind the data fields for a cell is that a cell defines a kind
+  ;; of telescope or record and these fields specify the projections. In this
+  ;; sense, the cells can also be seen as fibrations. Unlike records in Agda
+  ;; though, cells do not necessarily live in Set. So from that point of view
+  ;; it may be better to think of them in terms of data constructors for a GADT
+  ;; and the fields as constructor arguments.
+
+  ;; Sub-cells do not themselves have sub-cells. For now, I don't see a need
+  ;; for it but that may change eventually. So top-level cells are telescopic
+  ;; but sub-cells are not.
+
+  (sign nat
+    ;;;; sorts
+    (∂ τ #0
+      (⇒ *))
+
+    ;;;; terms
+    (∂ zero #1
+      (⇒ τ))
+    (∂ succ #1
+      (⇒ τ τ))
+    (∂ add #1
+      (⇒ [τ τ] τ))
+
+    ;; Yggdrasil has no notion of equality in the usual sense. Instead, there
+    ;; are only directed multitopic cells at different dimensions and free
+    ;; structure. Normalization can occur when cells have certain uniqueness
+    ;; properties that allow them to be interpreted as functions. For starters,
+    ;; this will probably be checked via some sort of pattern coverage.
+
+    ;;;; equations
+    (∂ =/idn #2
+      (⇒ m m)
+      (data
+        (∂#1 m (⇒ τ))))
+    (∂ =/seq #2
+      (⇒ m o)
+      (data
+        (∂ [m n o] #1 (⇒ τ))
+        (∂ α #2 (⇒ m n))
+        (∂ β #2 (⇒ n o))))
+    (∂ =/inv #2
+      (⇒ n m)
+      (data
+        (∂ [m n] #1 (⇒ τ))
+        (∂ α #2 (⇒ m n))))
+
+    (∂ cong/succ #2
+      (⇒ (succ m) (succ n))
+      (data
+        (∂ [m n] #1 (⇒ τ))
+        (∂ #2 (⇒ m n)))) ;; allow anonymous datas
+    (∂ add/zero #2
+      (⇒ (add m zero) m)
+      (data
+        (∂ m #1 (⇒ τ))))
+    (∂ add/succ #2
+      (⇒ (add m (succ n)) (succ o))
+      (data
+        (∂ [m n o] #1 (⇒ τ))
+        (∂ #2 (⇒ (add m n) o)))))
+
+  ;; Should a scope just be an anonymous module like in Agda?
+  (scope
+    (open nat)
+
+    (fun add #1 (⇒ [τ τ] τ)
+      (case add/zero)
+      (case add/succ))
+
+    (def one #1 (⇒ τ)
+      (succ zero))
+    (def two #1 (⇒ τ)
+      (succ one))
+    (def three #1 (⇒ τ)
+      (succ two))
+    (def four #1 (⇒ τ)
+      (succ three))
+
+    (def add·two·two=four #2 (⇒ (add two two) four)
+      (add/succ {two one three (add/succ {two zero two (add/zero {two})})}))))
