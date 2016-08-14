@@ -3,4 +3,4 @@ S src/**
 PKG containers
 PKG ppx_deriving
 PKG ppx_deriving.std
-FLG -w +a-6-30-39-41-42-48
+FLG -w +a-6-30-32-39-41-42-48

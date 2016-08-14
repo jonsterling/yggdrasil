@@ -1,5 +1,5 @@
 true: bin_annot
 true: package(containers)
 true: package(ppx_deriving.std)
-true: warn(+a-6-30-39-41-42-48)
+true: warn(+a-6-30-32-39-41-42-48)
 true: warn_error(A)
