@@ -24,6 +24,7 @@ and Tm : sig
     | Id of { tp : Tp.t }
     | Ap of { op : Op.t; sp : Sp.t }
   [@@deriving eq, ord, show]
+  val ( *@ ) : Op.t -> Sp.t -> t
   val ap : Op.t -> Sp.t -> t
   val op : Op.t -> t
 end = struct
@@ -34,6 +35,7 @@ end = struct
   [@@deriving eq, ord, show]
   let ap op sp = Ap { op; sp }
   let op op = ap op []
+  let ( *@ ) = ap
 end
 
 module Ar = struct
@@ -41,6 +43,7 @@ module Ar = struct
   type t = { dom : Tm.t list; cod : Tm.t }
   [@@deriving eq, ord, show]
   let mk dom cod = { dom; cod }
+  let ( --> ) = mk
 end
 
 module Decl : sig
@@ -48,6 +51,7 @@ module Decl : sig
   [@@deriving eq, ord, show]
   val source : t -> Tm.t list
   val target : t -> Tm.t
+  val ( <: ) : Op.t -> Ar.t -> t
 end = struct
   [@@@warning "-39"]
   open Ar
@@ -55,6 +59,7 @@ end = struct
   [@@deriving eq, ord, show]
   let source tm = tm.ar.dom
   let target tm = tm.ar.cod
+  let ( <: ) op ar = { op; ar }
 end
 
 module Sign : sig
@@ -99,59 +104,31 @@ end
 module Examples = struct
   open Ar
   open Decl
-  let star : Op.t = "*"
+  open Tm
+
+  let star = op "*"
 
   let types : Sign.t =
-    let delta = [] in
-    let delta = {
-      op = "bool";
-      ar = { dom = []; cod = Tm.op star };
-    } :: delta in
-    delta
-  let bool : Tm.t = Tm.op "bool"
+    ("bool" <: [] --> star) :: []
+  let bool = op "bool"
 
   let terms : Sign.t =
-    let delta = [] in
-    let delta = {
-      op = "ff";
-      ar = Ar.mk [] bool;
-    } :: delta in
-    let delta = {
-      op = "tt";
-      ar = Ar.mk [] bool;
-    } :: delta in
-    let delta = {
-      op = "con";
-      ar = Ar.mk [ bool; bool ] bool;
-    } :: delta in
-    delta
-  let ff = Tm.op "ff"
-  let tt = Tm.op "tt"
-  let con = Tm.op "con"
+    ("ff" <: [] --> bool) ::
+    ("tt" <: [] --> bool) ::
+    ("con" <: [ bool; bool ] --> bool) :: []
+  let ff = op "ff"
+  let tt = op "tt"
+  let con = op "con"
 
   let rules : Sign.t =
-    let delta = [] in
-    let delta = {
-      op = "con-ff-ff";
-      ar = Ar.mk [ Tm.ap "con" [ ff; ff ] ] ff;
-    } :: delta in
-    let delta = {
-      op = "con-ff-tt";
-      ar = Ar.mk [ Tm.ap "con" [ ff; tt ] ] ff;
-    } :: delta in
-    let delta = {
-      op = "con-tt-ff";
-      ar = Ar.mk [ Tm.ap "con" [ tt; ff ] ] ff;
-    } :: delta in
-    let delta = {
-      op = "con-tt-tt";
-      ar = Ar.mk [ Tm.ap "con" [ tt; tt ] ] tt;
-    } :: delta in
-    delta
-  let con_ff_ff = Tm.op "con-ff-ff"
-  let con_ff_tt = Tm.op "con-ff-tt"
-  let con_tt_ff = Tm.op "con-tt-ff"
-  let con_tt_tt = Tm.op "con-tt-tt"
+    ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> ff) ::
+    ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> ff) ::
+    ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> ff) ::
+    ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> tt) :: []
+  let con_ff_ff = op "con-ff-ff"
+  let con_ff_tt = op "con-ff-tt"
+  let con_tt_ff = op "con-tt-ff"
+  let con_tt_tt = op "con-tt-tt"
 
   let computad : Computad.t = [ types; terms; rules ]
   let () = Printf.printf "%s\n" @@ Computad.show computad
