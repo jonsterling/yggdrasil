@@ -17,7 +17,7 @@
     "url": "https://github.com/freebroccolo/yggdrasil/issues"
   },
   "scripts": {
-    "prepublish": "opam install ppx_deriving && npm run build",
+    "prepublish": "opam install containers ppx_deriving && npm run build",
     "build": "ocamlbuild -j 0 -use-ocamlfind -no-links src/index.native",
     "clean": "ocamlbuild -clean",
     "start": "_build/src/index.native"
