@@ -1,0 +1,2 @@
+true: package(ppx_deriving.std)
+true: bin_annot
