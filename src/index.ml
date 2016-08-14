@@ -52,6 +52,7 @@ module Decl : sig
   val source : t -> Tm.t list
   val target : t -> Tm.t
   val ( <: ) : Op.t -> Ar.t -> t
+  val ( <! ) : Op.t -> Tm.t -> t
 end = struct
   [@@@warning "-39"]
   open Ar
@@ -60,6 +61,7 @@ end = struct
   let source tm = tm.ar.dom
   let target tm = tm.ar.cod
   let ( <: ) op ar = { op; ar }
+  let ( <! ) op cod = { op; ar = { dom = []; cod }}
 end
 
 module Sign : sig
@@ -109,12 +111,12 @@ module Examples = struct
   let star = op "*"
 
   let types : Sign.t =
-    ("bool" <: [] --> star) :: []
+    ("bool" <! star) :: []
   let bool = op "bool"
 
   let terms : Sign.t =
-    ("ff" <: [] --> bool) ::
-    ("tt" <: [] --> bool) ::
+    ("ff" <! bool) ::
+    ("tt" <! bool) ::
     ("con" <: [ bool; bool ] --> bool) :: []
   let ff = op "ff"
   let tt = op "tt"
