@@ -116,31 +116,48 @@ end = struct
       end)
   end
 
+  module Trie = struct
+    include CCTrie.MakeList(struct
+      type t = Tm.t
+      let compare = Tm.compare
+    end)
+  end
+
+  module Pr : sig
+    type t = (Tm.t list * Op.t) Trie.t
+    [@@deriving show]
+  end = struct
+    type pair = Tm.t list * (Tm.t list * Op.t)
+    [@@deriving show]
+    let print fmt trie = CCList.print pp_pair fmt (Trie.to_list trie)
+    type t = (Tm.t list * Op.t) Trie.t [@printer print]
+    [@@deriving show]
+  end
+
   type t = {
-    ars :  (Ar.t Map.t [@printer Map.print ~arrow:" := " Op.pp Ar.pp]);
-    dms :  (Dm.t Map.t [@printer Map.print ~arrow:" := " Op.pp Dm.pp]);
-    rls : (Set.t Map.t [@printer Map.print ~arrow:" := " Op.pp (Set.print Op.pp)]);
-  }
-  [@@deriving show]
+    ars : (Ar.t Map.t [@printer Map.print ~arrow:" := " Op.pp Ar.pp]);
+    dms : (Dm.t Map.t [@printer Map.print ~arrow:" := " Op.pp Dm.pp]);
+    prs : (Pr.t Map.t [@printer Map.print ~arrow:" := " Op.pp Pr.pp]);
+  } [@@deriving show]
 
   let init = {
     ars = Map.empty;
     dms = Map.empty;
-    rls = Map.empty;
+    prs = Map.empty;
   }
   let bind sg dm { op; ar } = {
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
-    rls = match [@warning "-4"] ar with
-      | { dom = [ Ap { op = theta; _ } ]; _ } when dm > 1 ->
+    prs = match [@warning "-4"] ar with
+      | { dom = [ Ap { op = theta; sp } ]; _ } when dm > 1 ->
         let update = function
           | None ->
-            Some (Set.add op Set.empty)
-          | Some rls ->
-            Some (Set.add op rls) in
-        Map.update theta update sg.rls
+            Some (Trie.add sp (ar.cod, op) Trie.empty)
+          | Some pre ->
+            Some (Trie.add sp (ar.cod, op) pre) in
+        Map.update theta update sg.prs
       | _ ->
-        sg.rls
+        sg.prs
   }
   let arity sg op =
     Map.find op sg.ars
