@@ -47,23 +47,18 @@ module Ar : sig
   type t = {
     dom : Tm.t list;
     cod : Tm.t list;
-    inv : bool;
   }
   [@@deriving eq, ord, show]
   val ( --> ) : Tm.t list -> Tm.t list -> t
-  val ( -=> ) : Tm.t list -> Tm.t list -> t
 end = struct
   type t = {
     dom : Tm.t list;
     cod : Tm.t list;
-    inv : bool;
   }
   [@@deriving eq, ord, show]
 
   let ( --> ) dom cod =
-    { dom; cod; inv = false }
-  let ( -=> ) dom cod =
-    { dom; cod; inv = true }
+    { dom; cod }
 end
 
 module Decl : sig
@@ -133,7 +128,7 @@ end = struct
     dms = Map.empty;
     rls = Map.empty;
   }
-  let bindCell sg dm { op; ar } = {
+  let bind sg dm { op; ar } = {
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
     rls = match [@warning "-4"] ar with
@@ -147,19 +142,6 @@ end = struct
       | _ ->
         sg.rls
   }
-  let bind sg dm de =
-    let sg = bindCell sg dm de in
-    if de.ar.inv then
-      bindCell sg dm {
-        op = "@inv:" ^ de.op;
-        ar = {
-          de.ar with
-          dom = de.ar.cod;
-          cod = de.ar.dom;
-        }
-      }
-    else
-      sg
   let arity sg op =
     Map.find op sg.ars
   let dimen sg op =
@@ -198,22 +180,22 @@ module Examples = struct
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] -=> [ tt ])
+    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> [ tt ])
   let sg =
-    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] -=> [ ff ])
+    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> [ ff ])
   let not_ff =
     op "not-ff"
   let not_tt =
     op "not-tt"
 
   let sg =
-    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] -=> [ ff ])
+    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> [ ff ])
   let sg =
-    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] -=> [ ff ])
+    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> [ ff ])
   let sg =
-    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] -=> [ ff ])
+    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> [ ff ])
   let sg =
-    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] -=> [ tt ])
+    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> [ tt ])
   let con_ff_ff =
     op "con-ff-ff"
   let con_ff_tt =
