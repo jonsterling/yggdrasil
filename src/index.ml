@@ -198,9 +198,9 @@ module Examples = struct
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> [ tt ])
+    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] -=> [ tt ])
   let sg =
-    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> [ ff ])
+    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] -=> [ ff ])
   let not_ff =
     op "not-ff"
   let not_tt =
