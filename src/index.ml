@@ -151,7 +151,7 @@ end = struct
     let sg = bindCell sg dm de in
     if de.ar.inv then
       bindCell sg dm {
-        op = "inv-" ^ de.op;
+        op = "@inv:" ^ de.op;
         ar = {
           de.ar with
           dom = de.ar.cod;
