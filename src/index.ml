@@ -81,10 +81,13 @@ module Computad : sig
   [@@deriving show]
   val init : t
   val bind : t -> Dm.t -> Decl.t -> t
-  val arity : t -> Op.t -> Ar.t option
-  val dimen : t -> Op.t -> Dm.t option
+  val arity : t -> Op.t -> Ar.t
+  val dimen : t -> Op.t -> Dm.t
 end = struct
+  open Ar
   open Decl
+  open Tm
+
   module Map = struct
     include CCMap.Make(struct
         type t = Op.t
@@ -92,24 +95,43 @@ end = struct
       end)
   end
 
+  module Set = struct
+    include CCSet.Make(struct
+        type t = Op.t
+        let compare = Op.compare
+      end)
+  end
+
   type t = {
-    ars : (Ar.t Map.t [@printer Map.print ~arrow:" := " Op.pp Ar.pp]);
-    dms : (Dm.t Map.t [@printer Map.print ~arrow:" := " Op.pp Dm.pp]);
+    ars :  (Ar.t Map.t [@printer Map.print ~arrow:" := " Op.pp Ar.pp]);
+    dms :  (Dm.t Map.t [@printer Map.print ~arrow:" := " Op.pp Dm.pp]);
+    rls : (Set.t Map.t [@printer Map.print ~arrow:" := " Op.pp (Set.print Op.pp)]);
   }
   [@@deriving show]
 
   let init = {
     ars = Map.empty;
     dms = Map.empty;
+    rls = Map.empty;
   }
   let bind sg dm { op; ar } = {
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
+    rls = match [@warning "-4"] ar with
+      | { dom = [ Ap { op = theta; _ } ]; _ } ->
+        let update = function
+          | None ->
+            Some (Set.add op Set.empty)
+          | Some rls ->
+            Some (Set.add op rls) in
+        Map.update theta update sg.rls
+      | _ ->
+        sg.rls
   }
   let arity sg op =
-    try Some (Map.find op sg.ars) with Not_found -> None
+    Map.find op sg.ars
   let dimen sg op =
-    try Some (Map.find op sg.dms) with Not_found -> None
+    Map.find op sg.dms
 end
 
 module Examples = struct
