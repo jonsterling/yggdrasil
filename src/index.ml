@@ -118,7 +118,7 @@ end = struct
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
     rls = match [@warning "-4"] ar with
-      | { dom = [ Ap { op = theta; _ } ]; _ } ->
+      | { dom = [ Ap { op = theta; _ } ]; _ } when dm > 1 ->
         let update = function
           | None ->
             Some (Set.add op Set.empty)
