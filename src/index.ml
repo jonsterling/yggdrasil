@@ -4,7 +4,7 @@ module Dm = struct
 end
 
 module Op = struct
-  type t = string
+  type t = string [@printer fun fmt -> Format.fprintf fmt "%s"]
   [@@deriving eq, ord, show]
 end
 
@@ -34,9 +34,30 @@ end = struct
     | Id of { tp : Tp.t }
     | Ap of { op : Op.t; sp : Sp.t }
   [@@deriving eq, ord, show]
+    [@@deriving eq, ord]
 
   let ap op sp =
     Ap { op; sp }
+
+  let pp fmt = function
+    | Ap { op; sp = [] } ->
+      Format.fprintf fmt "%a"
+        Op.pp op
+    | Ap { op; sp } ->
+      Format.fprintf fmt "%a %a"
+        Op.pp op
+        Sp.pp sp
+    | Id { tp } ->
+      Format.fprintf fmt "id[%a]"
+        Tp.pp tp
+
+  let show tm =
+    let buffer = Buffer.create 0 in
+    let fmt = Format.formatter_of_buffer buffer in
+    let () = pp fmt tm in
+    let () = Format.pp_print_flush fmt () in
+    Buffer.contents buffer
+
   let op op =
     ap op []
   let ( *@ ) =
@@ -46,16 +67,33 @@ end
 module Ar : sig
   type t = {
     dom : Tm.t list;
-    cod : Tm.t list;
+    cod : Tm.t;
   }
   [@@deriving eq, ord, show]
-  val ( --> ) : Tm.t list -> Tm.t list -> t
+  val ( --> ) : Tm.t list -> Tm.t -> t
 end = struct
   type t = {
     dom : Tm.t list;
-    cod : Tm.t list;
+    cod : Tm.t;
   }
-  [@@deriving eq, ord, show]
+  [@@deriving eq, ord]
+
+  let pp fmt = function
+    | { dom = [ dom ]; cod } ->
+      Format.fprintf fmt "%a -> %a"
+        Tm.pp dom
+        Tm.pp cod
+    | { dom; cod } ->
+      Format.fprintf fmt "%a -> %a"
+        Sp.pp dom
+        Tm.pp cod
+
+  let show ar =
+    let buffer = Buffer.create 0 in
+    let fmt = Format.formatter_of_buffer buffer in
+    let () = pp fmt ar in
+    let () = Format.pp_print_flush fmt () in
+    Buffer.contents buffer
 
   let ( --> ) dom cod =
     { dom; cod }
@@ -68,9 +106,9 @@ module Decl : sig
   }
   [@@deriving eq, ord, show]
   val source : t -> Tm.t list
-  val target : t -> Tm.t list
+  val target : t -> Tm.t
   val ( <: ) : Op.t -> Ar.t -> t
-  val ( <! ) : Op.t -> Tm.t list -> t
+  val ( <! ) : Op.t -> Tm.t -> t
 end = struct
   open Ar
 
@@ -97,7 +135,7 @@ module Computad : sig
   val arity : t -> Op.t -> Ar.t
   val dimen : t -> Op.t -> Dm.t
   val normSp : t -> Sp.t -> Sp.t
-  val normTm : t -> Tm.t -> Sp.t
+  val normTm : t -> Tm.t -> Tm.t
 end = struct
   open Ar
   open Decl
@@ -118,13 +156,13 @@ end = struct
   end
 
   module Pr : sig
-    type t = (Tm.t list * Op.t) Trie.t
+    type t = (Tm.t * Op.t) Trie.t
     [@@deriving show]
   end = struct
-    type pair = Tm.t list * (Tm.t list * Op.t)
+    type pair = Tm.t list * (Tm.t * Op.t)
     [@@deriving show]
     let print fmt trie = CCList.print pp_pair fmt (Trie.to_list trie)
-    type t = (Tm.t list * Op.t) Trie.t [@printer print]
+    type t = (Tm.t * Op.t) Trie.t [@printer print]
     [@@deriving show]
   end
 
@@ -161,16 +199,16 @@ end = struct
   let dimen sg op =
     Map.find op sg.dms
 
-  let rec normTm (sg : t) (tm : Tm.t) : Sp.t =
+  let rec normTm sg tm =
     match [@warning "-4"] tm with
     | Ap { op; sp } when not (CCList.is_empty sp) ->
       let sp = normSp sg sp in
       let prs = Map.find op sg.prs in
       let (res, _) = Trie.find_exn sp prs in
       res
-    | _ -> [tm]
-  and normSp (sg : t) (sp : Sp.t) : Sp.t =
-    CCList.flat_map (normTm sg) sp
+    | _ -> tm
+  and normSp sg sp =
+    CCList.map (normTm sg) sp
 end
 
 module Examples = struct
@@ -185,42 +223,44 @@ module Examples = struct
     op "*"
 
   let sg =
-    bind sg 0 ("bool" <! [ star ])
+    bind sg 0 ("bool" <! star)
   let bool =
     op "bool"
 
   let sg =
-    bind sg 1 ("ff" <! [ bool ])
+    bind sg 1 ("ff" <! bool)
   let sg =
-    bind sg 1 ("tt" <! [ bool ])
+    bind sg 1 ("tt" <! bool)
   let sg =
-    bind sg 1 ("not" <: [ bool ] --> [ bool ])
+    bind sg 1 ("not" <: [ bool ] --> bool)
   let sg =
-    bind sg 1 ("con" <: [ bool; bool ] --> [ bool ])
+    bind sg 1 ("con" <: [ bool; bool ] --> bool)
   let ff =
     op "ff"
   let tt =
     op "tt"
+  let not =
+    op "not"
   let con =
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> [ tt ])
+    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> tt)
   let sg =
-    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> [ ff ])
+    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> ff)
   let not_ff =
     op "not-ff"
   let not_tt =
     op "not-tt"
 
   let sg =
-    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> [ ff ])
+    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> [ ff ])
+    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> [ ff ])
+    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> [ tt ])
+    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> tt)
   let con_ff_ff =
     op "con-ff-ff"
   let con_ff_tt =
@@ -232,9 +272,13 @@ module Examples = struct
 
   let normalize term =
     let norm = Computad.normTm sg term in
-    Printf.printf "term:\n\t%s\nnorm:\n\t%s\n\n"
+    Printf.printf "term: %s\nnorm: %s\n\n"
       (Tm.show term)
-      (Sp.show norm)
+      (Tm.show norm)
+
+  let () =
+    Printf.printf "%s\n\n"
+    @@ Computad.show sg
 
   let () =
     normalize @@ "not" *@ [ ff ]
