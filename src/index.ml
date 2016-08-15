@@ -43,27 +43,46 @@ end = struct
     ap
 end
 
-module Ar = struct
-  type t = { dom : Tm.t list; cod : Tm.t }
+module Ar : sig
+  type t = {
+    dom : Tm.t list;
+    cod : Tm.t list;
+    inv : bool;
+  }
+  [@@deriving eq, ord, show]
+  val ( --> ) : Tm.t list -> Tm.t list -> t
+  val ( -=> ) : Tm.t list -> Tm.t list -> t
+end = struct
+  type t = {
+    dom : Tm.t list;
+    cod : Tm.t list;
+    inv : bool;
+  }
   [@@deriving eq, ord, show]
 
-  let mk dom cod =
-    { dom; cod }
-  let ( --> ) =
-    mk
+  let ( --> ) dom cod =
+    { dom; cod; inv = false }
+  let ( -=> ) dom cod =
+    { dom; cod; inv = true }
 end
 
 module Decl : sig
-  type t = { op : Op.t; ar : Ar.t }
+  type t = {
+    op : Op.t;
+    ar : Ar.t;
+  }
   [@@deriving eq, ord, show]
   val source : t -> Tm.t list
-  val target : t -> Tm.t
+  val target : t -> Tm.t list
   val ( <: ) : Op.t -> Ar.t -> t
-  val ( <! ) : Op.t -> Tm.t -> t
+  val ( <! ) : Op.t -> Tm.t list -> t
 end = struct
   open Ar
 
-  type t = { op : Op.t; ar : Ar.t }
+  type t = {
+    op : Op.t;
+    ar : Ar.t;
+  }
   [@@deriving eq, ord, show]
 
   let source tm =
@@ -73,7 +92,7 @@ end = struct
   let ( <: ) op ar =
     { op; ar }
   let ( <! ) op cod =
-    { op; ar = { dom = []; cod }}
+    { op; ar = [] --> cod }
 end
 
 module Computad : sig
@@ -114,7 +133,7 @@ end = struct
     dms = Map.empty;
     rls = Map.empty;
   }
-  let bind sg dm { op; ar } = {
+  let bindCell sg dm { op; ar } = {
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
     rls = match [@warning "-4"] ar with
@@ -128,6 +147,19 @@ end = struct
       | _ ->
         sg.rls
   }
+  let bind sg dm de =
+    let sg = bindCell sg dm de in
+    if de.ar.inv then
+      bindCell sg dm {
+        op = "inv-" ^ de.op;
+        ar = {
+          de.ar with
+          dom = de.ar.cod;
+          cod = de.ar.dom;
+        }
+      }
+    else
+      sg
   let arity sg op =
     Map.find op sg.ars
   let dimen sg op =
@@ -146,18 +178,18 @@ module Examples = struct
     op "*"
 
   let sg =
-    bind sg 0 ("bool" <! star)
+    bind sg 0 ("bool" <! [ star ])
   let bool =
     op "bool"
 
   let sg =
-    bind sg 1 ("ff" <! bool)
+    bind sg 1 ("ff" <! [ bool ])
   let sg =
-    bind sg 1 ("tt" <! bool)
+    bind sg 1 ("tt" <! [ bool ])
   let sg =
-    bind sg 1 ("not" <: [ bool ] --> bool)
+    bind sg 1 ("not" <: [ bool ] --> [ bool ])
   let sg =
-    bind sg 1 ("con" <: [ bool; bool ] --> bool)
+    bind sg 1 ("con" <: [ bool; bool ] --> [ bool ])
   let ff =
     op "ff"
   let tt =
@@ -166,22 +198,22 @@ module Examples = struct
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> tt)
+    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> [ tt ])
   let sg =
-    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> ff)
+    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> [ ff ])
   let not_ff =
     op "not-ff"
   let not_tt =
     op "not-tt"
 
   let sg =
-    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> ff)
+    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] -=> [ ff ])
   let sg =
-    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> ff)
+    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] -=> [ ff ])
   let sg =
-    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> ff)
+    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] -=> [ ff ])
   let sg =
-    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> tt)
+    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] -=> [ tt ])
   let con_ff_ff =
     op "con-ff-ff"
   let con_ff_tt =
