@@ -79,6 +79,9 @@ end = struct
   [@@deriving eq, ord]
 
   let pp fmt = function
+    | { dom = []; cod } ->
+      Format.fprintf fmt "%a"
+        Tm.pp cod
     | { dom = [ dom ]; cod } ->
       Format.fprintf fmt "%a -> %a"
         Tm.pp dom
