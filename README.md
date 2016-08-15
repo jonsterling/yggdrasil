@@ -1,6 +1,6 @@
 # Yggdrasil
 
-A higher-dimensional type theory based on opetopic computads
+A higher-dimensional type theory based on computads
 
 #### Building
 

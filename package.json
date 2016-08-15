@@ -1,7 +1,7 @@
 {
   "name": "yggdrasil",
   "version": "0.0.0",
-  "description": "A higher-dimensional type theory based on opetopic computads",
+  "description": "A higher-dimensional type theory based on computads",
   "author": {
     "name": "Darin Morrison",
     "email": "freebroccolo@users.noreply.github.com",
