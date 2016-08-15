@@ -155,6 +155,8 @@ module Examples = struct
   let sg =
     bind sg 1 ("tt" <! bool)
   let sg =
+    bind sg 1 ("not" <: [ bool ] --> bool)
+  let sg =
     bind sg 1 ("con" <: [ bool; bool ] --> bool)
   let ff =
     op "ff"
@@ -162,6 +164,15 @@ module Examples = struct
     op "tt"
   let con =
     op "con"
+
+  let sg =
+    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> tt)
+  let sg =
+    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> ff)
+  let not_ff =
+    op "not-ff"
+  let not_tt =
+    op "not-tt"
 
   let sg =
     bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> ff)
