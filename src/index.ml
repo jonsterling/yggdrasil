@@ -91,12 +91,13 @@ end = struct
 end
 
 module Computad : sig
-  type t
-  [@@deriving show]
+  type t [@@deriving show]
   val init : t
   val bind : t -> Dm.t -> Decl.t -> t
   val arity : t -> Op.t -> Ar.t
   val dimen : t -> Op.t -> Dm.t
+  val normSp : t -> Sp.t -> Sp.t
+  val normTm : t -> Tm.t -> Sp.t
 end = struct
   open Ar
   open Decl
@@ -104,13 +105,6 @@ end = struct
 
   module Map = struct
     include CCMap.Make(struct
-        type t = Op.t
-        let compare = Op.compare
-      end)
-  end
-
-  module Set = struct
-    include CCSet.Make(struct
         type t = Op.t
         let compare = Op.compare
       end)
@@ -145,6 +139,7 @@ end = struct
     dms = Map.empty;
     prs = Map.empty;
   }
+
   let bind sg dm { op; ar } = {
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
@@ -159,10 +154,23 @@ end = struct
       | _ ->
         sg.prs
   }
+
   let arity sg op =
     Map.find op sg.ars
+
   let dimen sg op =
     Map.find op sg.dms
+
+  let rec normTm (sg : t) (tm : Tm.t) : Sp.t =
+    match [@warning "-4"] tm with
+    | Ap { op; sp } when not (CCList.is_empty sp) ->
+      let sp = normSp sg sp in
+      let prs = Map.find op sg.prs in
+      let (res, _) = Trie.find_exn sp prs in
+      res
+    | _ -> [tm]
+  and normSp (sg : t) (sp : Sp.t) : Sp.t =
+    CCList.flat_map (normTm sg) sp
 end
 
 module Examples = struct
@@ -222,7 +230,20 @@ module Examples = struct
   let con_tt_tt =
     op "con-tt-tt"
 
+  let normalize term =
+    let norm = Computad.normTm sg term in
+    Printf.printf "term:\n\t%s\nnorm:\n\t%s\n\n"
+      (Tm.show term)
+      (Sp.show norm)
+
   let () =
-    Printf.printf "%s\n"
-    @@ Computad.show sg
+    normalize @@ "not" *@ [ ff ]
+  let () =
+    normalize @@ "not" *@ [ tt ]
+  let () =
+    normalize @@ "con" *@ [ ff; ff ]
+  let () =
+    normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ]
+  let () =
+    normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ]
 end
