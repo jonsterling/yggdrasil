@@ -4,8 +4,8 @@ end = struct
   let show pp_obj obj =
     let buffer = Buffer.create 0 in
     let fmt = Format.formatter_of_buffer buffer in
-    let () = pp_obj fmt obj in
-    let () = Format.pp_print_flush fmt () in
+    pp_obj fmt obj;
+    Format.pp_print_flush fmt ();
     Buffer.contents buffer
 end
 
@@ -53,8 +53,7 @@ end = struct
   type t =
     | Id of { tp : Tp.t }
     | Ap of { op : Op.t; sp : Sp.t }
-  [@@deriving eq, ord, show]
-    [@@deriving eq, ord]
+  [@@deriving eq, ord]
 
   let ap op sp =
     Ap { op; sp }
@@ -87,15 +86,13 @@ module Ar : sig
   type t = {
     dom : Tm.t list;
     cod : Tm.t;
-  }
-  [@@deriving eq, ord, show]
+  } [@@deriving eq, ord, show]
   val ( --> ) : Tm.t list -> Tm.t -> t
 end = struct
   type t = {
     dom : Tm.t list;
     cod : Tm.t;
-  }
-  [@@deriving eq, ord]
+  } [@@deriving eq, ord]
 
   let pp fmt = function
     | { dom = []; cod } ->
@@ -120,8 +117,7 @@ module Decl : sig
   type t = {
     op : Op.t;
     ar : Ar.t;
-  }
-  [@@deriving eq, ord, show]
+  } [@@deriving eq, ord, show]
   val source : t -> Tm.t list
   val target : t -> Tm.t
   val ( <: ) : Op.t -> Ar.t -> t
@@ -132,8 +128,7 @@ end = struct
   type t = {
     op : Op.t;
     ar : Ar.t;
-  }
-  [@@deriving eq, ord, show]
+  } [@@deriving eq, ord, show]
 
   let source tm =
     tm.ar.dom
@@ -172,8 +167,8 @@ end = struct
           pp_elt elt in
       let list =
         List.fast_sort
-        (fun (lhs, _) (rhs, _) -> Op.compare lhs rhs)
-        (to_list map) in
+          (fun (lhs, _) (rhs, _) -> Op.compare lhs rhs)
+          (to_list map) in
       fprintf fmt "@[<v 2>@[@  @]%a@,@]"
         (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
 
@@ -190,9 +185,9 @@ end = struct
 
   module Trie = struct
     include CCTrie.MakeList(struct
-      type t = Tm.t
-      let compare = Tm.compare
-    end)
+        type t = Tm.t
+        let compare = Tm.compare
+      end)
   end
 
   module Pr : sig
@@ -203,8 +198,8 @@ end = struct
       let open Format in
       let list =
         List.fast_sort
-        (fun (_, (_, lhs)) (_, (_, rhs)) -> Op.compare lhs rhs)
-        (Trie.to_list trie) in
+          (fun (_, (_, lhs)) (_, (_, rhs)) -> Op.compare lhs rhs)
+          (Trie.to_list trie) in
       let assoc fmt = function
         | ([ dom ], (cod, op)) ->
           fprintf fmt "@[%a@ :@ %a@ ->@ %a@]"
