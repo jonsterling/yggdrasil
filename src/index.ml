@@ -319,22 +319,22 @@ module Examples = struct
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ pt @@ "not" *@ [ ff ] ] --> tt)
+    bind sg 2 ("not/ff" <: [ pt @@ "not" *@ [ ff ] ] --> tt)
   let sg =
-    bind sg 2 ("not-tt" <: [ pt @@ "not" *@ [ tt ] ] --> ff)
+    bind sg 2 ("not/tt" <: [ pt @@ "not" *@ [ tt ] ] --> ff)
   let not_ff =
     op "not-ff"
   let not_tt =
     op "not-tt"
 
   let sg =
-    bind sg 2 ("con-ff-ff" <: [ pt @@ "con" *@ [ ff; ff ] ] --> ff)
+    bind sg 2 ("con/ff/ff" <: [ pt @@ "con" *@ [ ff; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-ff-tt" <: [ pt @@ "con" *@ [ ff; tt ] ] --> ff)
+    bind sg 2 ("con/ff/tt" <: [ pt @@ "con" *@ [ ff; tt ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-ff" <: [ pt @@ "con" *@ [ tt; ff ] ] --> ff)
+    bind sg 2 ("con/tt/ff" <: [ pt @@ "con" *@ [ tt; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-tt" <: [ pt @@ "con" *@ [ tt; tt ] ] --> tt)
+    bind sg 2 ("con/tt/tt" <: [ pt @@ "con" *@ [ tt; tt ] ] --> tt)
   let con_ff_ff =
     op "con-ff-ff"
   let con_ff_tt =
@@ -377,9 +377,9 @@ module Examples = struct
     op "map"
 
   let sg =
-    bind sg 2 ("map-nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
+    bind sg 2 ("map/nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
   let sg =
-    bind sg 2 ("map-cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])
+    bind sg 2 ("map/cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])
 
   let normalize term =
     let norm = Computad.normTm sg term in
