@@ -335,6 +335,40 @@ module Examples = struct
   let con_tt_tt =
     op "con-tt-tt"
 
+  let sg =
+    bind sg 0 ("circle" <! star)
+  let circle =
+    op "circle"
+
+  let sg =
+    bind sg 1 ("base" <! circle)
+  let base =
+    op "base"
+
+  let sg =
+    bind sg 2 ("loop" <: [ base ] --> base )
+  let loop =
+    op "loop"
+
+  let sg =
+    bind sg 0 ("interval" <! star)
+  let interval =
+    op "interval"
+
+  let sg =
+    bind sg 1 ("zero" <! interval)
+  let sg =
+    bind sg 1 ("one" <! interval)
+  let zero =
+    op "zero"
+  let one =
+    op "one"
+
+  let sg =
+    bind sg 2 ("segment" <: [ zero ] --> one )
+  let segment =
+    op "segment"
+
   let normalize term =
     let norm = Computad.normTm sg term in
     Format.fprintf Format.std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
@@ -355,4 +389,8 @@ module Examples = struct
     normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ]
   let () =
     normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ]
+  let () =
+    normalize @@ base
+  let () =
+    normalize @@ zero
 end
