@@ -346,38 +346,45 @@ module Examples = struct
     op "con-tt-tt"
 
   let sg =
-    bind sg 0 ("circle" <! star)
-  let circle =
-    op "circle"
+    bind sg 0 ("nat" <! star)
+  let nat =
+    op "nat"
 
   let sg =
-    bind sg 1 ("base" <! circle)
-  let base =
-    op "base"
-
+    bind sg 1 ("zero" <! nat)
   let sg =
-    bind sg 2 ("loop" <: [ pt base ] --> base )
-  let loop =
-    op "loop"
-
-  let sg =
-    bind sg 0 ("interval" <! star)
-  let interval =
-    op "interval"
-
-  let sg =
-    bind sg 1 ("zero" <! interval)
-  let sg =
-    bind sg 1 ("one" <! interval)
+    bind sg 1 ("succ" <: [ pt nat ] --> nat)
   let zero =
     op "zero"
-  let one =
-    op "one"
+  let succ =
+    op "succ"
 
   let sg =
-    bind sg 2 ("segment" <: [ pt zero ] --> one )
-  let segment =
-    op "segment"
+    bind sg 0 ("list" <! star)
+  let list =
+    op "list"
+
+  let sg =
+    bind sg 1 ("nil" <! list)
+  let sg =
+    bind sg 1 ("cons" <: [ pt nat; pt list ] --> list)
+  let sg =
+    bind sg 1 ("map" <: [ [ pt nat ] --> nat; pt list ] --> list)
+  let nil =
+    op "nil"
+  let cons =
+    op "cons"
+  let map =
+    op "map"
+
+  let sg =
+    bind sg 2 ("map-nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
+  let sg =
+    bind sg 2 (
+      "map-cons"
+         <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ]
+        --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ]
+    )
 
   let normalize term =
     let norm = Computad.normTm sg term in
@@ -402,7 +409,7 @@ module Examples = struct
   let () =
     normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ]
   let () =
-    normalize @@ base
+    normalize @@ "map" *@ [ succ; nil ]
   let () =
-    normalize @@ zero
+    normalize @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ]
 end
