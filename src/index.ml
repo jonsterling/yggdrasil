@@ -62,10 +62,6 @@ end = struct
     | Ap { op; sp = [] } ->
       Format.fprintf fmt "%a"
         Op.pp op
-    | Ap { op; sp = [ tm ] } ->
-      Format.fprintf fmt "%a@ %a"
-        Op.pp op
-        Tm.pp tm
     | Ap { op; sp } ->
       Format.fprintf fmt "%a@ %a"
         Op.pp op
@@ -209,12 +205,12 @@ end = struct
           (Trie.to_list trie) in
       let assoc fmt = function
         | ([ dom ], (cod, op)) ->
-          fprintf fmt "@[%a@ :@ %a@ ->@ %a@]"
+          fprintf fmt "@[<2>%a@ :@ %a@ ->@ %a@]"
             Op.pp op
             Tm.pp dom
             Tm.pp cod
         | (dom, (cod, op)) ->
-          fprintf fmt "@[%a@ :@ %a@ ->@ %a@]"
+          fprintf fmt "@[<2>%a@ :@ %a@ ->@ %a@]"
             Op.pp op
             Sp.pp dom
             Tm.pp cod in
