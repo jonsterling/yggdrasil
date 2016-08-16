@@ -15,7 +15,7 @@ module Dm = struct
 end
 
 module Op = struct
-  type t = string [@printer fun fmt -> Format.fprintf fmt "%s"]
+  type t = string [@show.printer fun fmt -> Format.fprintf fmt "%s"]
   [@@deriving eq, ord, show]
 end
 
@@ -218,14 +218,14 @@ end = struct
             Tm.pp cod in
       fprintf fmt "@[<v>%a@]"
         (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
-    type t = (Tm.t * Op.t) Trie.t [@printer print]
+    type t = (Tm.t * Op.t) Trie.t [@show.printer print]
     [@@deriving show]
   end
 
   type t = {
-    ars : (Ar.t Map.t [@printer Map.print_ops Op.pp Ar.pp]);
-    dms : (Dm.t Map.t [@printer Map.print_ops Op.pp Dm.pp]);
-    prs : (Pr.t Map.t [@printer Map.print_rls Op.pp Pr.pp]);
+    ars : (Ar.t Map.t [@show.printer Map.print_ops Op.pp Ar.pp]);
+    dms : (Dm.t Map.t [@show.printer Map.print_ops Op.pp Dm.pp]);
+    prs : (Pr.t Map.t [@show.printer Map.print_rls Op.pp Pr.pp]);
   } [@@deriving show]
 
   let init = {
