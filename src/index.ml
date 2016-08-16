@@ -65,7 +65,7 @@ end = struct
       fprintf fmt "%a"
         Op.pp op
     | Ap { op; sp } ->
-      fprintf fmt "%a@ %a"
+      fprintf fmt "%a %a"
         Op.pp op
         Sp.pp sp
     | Id { tp } ->
