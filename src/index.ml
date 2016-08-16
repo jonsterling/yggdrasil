@@ -379,11 +379,7 @@ module Examples = struct
   let sg =
     bind sg 2 ("map-nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
   let sg =
-    bind sg 2 (
-      "map-cons"
-         <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ]
-        --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ]
-    )
+    bind sg 2 ("map-cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])
 
   let normalize term =
     let norm = Computad.normTm sg term in
