@@ -18,8 +18,8 @@
   },
   "scripts": {
     "prepublish": "opam install containers ppx_deriving && npm run build",
-    "build": "ocamlbuild -j 0 -use-ocamlfind -no-links src/index.native",
+    "build": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",
     "clean": "ocamlbuild -clean",
-    "start": "_build/src/index.native"
+    "start": "_build/examples/ex01.native"
   }
 }
