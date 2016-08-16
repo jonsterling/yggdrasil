@@ -154,7 +154,6 @@ module Computad : sig
   val bind : t -> Dm.t -> Decl.t -> t
   val arity : t -> Op.t -> Ar.t
   val dimen : t -> Op.t -> Dm.t
-  val normSp : t -> Sp.t -> Sp.t
   val normTm : t -> Tm.t -> Tm.t
 end = struct
   open Ar
@@ -258,10 +257,10 @@ end = struct
   let dimen sg op =
     Map.find op sg.dms
 
-  let rec normTm sg tm =
+  let rec stepTm sg tm =
     match [@warning "-4"] tm with
     | Ap { op; sp } ->
-      let sp = normSp sg sp in
+      let sp = stepSp sg sp in
       begin
         (* Try to look up the normalization rule. For now we assume that if
            the term is well typed but the lookup fails then there is an
@@ -271,12 +270,20 @@ end = struct
           let prs = Map.find op sg.prs in
           let (res, _) = Trie.find_exn sp prs in
           res
-        with Not_found -> tm
+        with Not_found ->
+          Ap { op; sp }
       end
     | _ -> tm
 
-  and normSp sg sp =
-    CCList.map (normTm sg) sp
+  and stepSp sg sp =
+    CCList.map (stepTm sg) sp
+
+  let rec normTm sg acc =
+    let res = stepTm sg acc in
+    if Tm.equal acc res then
+      acc
+    else
+      normTm sg res
 end
 
 module Examples = struct
