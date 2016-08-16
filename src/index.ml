@@ -385,6 +385,8 @@ module Examples = struct
   let () =
     normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ]
   let () =
+    normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ]
+  let () =
     normalize @@ base
   let () =
     normalize @@ zero
