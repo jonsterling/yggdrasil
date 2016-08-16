@@ -257,12 +257,21 @@ end = struct
 
   let rec normTm sg tm =
     match [@warning "-4"] tm with
-    | Ap { op; sp } when not (CCList.is_empty sp) ->
+    | Ap { op; sp } ->
       let sp = normSp sg sp in
-      let prs = Map.find op sg.prs in
-      let (res, _) = Trie.find_exn sp prs in
-      res
+      begin
+        (* Try to look up the normalization rule. For now we assume that if
+           the term is well typed but the lookup fails then there is an
+           implicit loop. This allows cells like `ff` to normalize without
+           us having to keep track of unnecessary data. *)
+        try
+          let prs = Map.find op sg.prs in
+          let (res, _) = Trie.find_exn sp prs in
+          res
+        with Not_found -> tm
+      end
     | _ -> tm
+
   and normSp sg sp =
     CCList.map (normTm sg) sp
 end
