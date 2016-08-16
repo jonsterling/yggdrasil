@@ -18,7 +18,9 @@
   },
   "scripts": {
     "prepublish": "opam install containers ppx_deriving && npm run build",
-    "build": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",
+    "build": "npm run build:index && npm run build:example",
+    "build:index": "ocamlbuild -j 0 -use-ocamlfind -no-links src/Yggdrasil.cmxa",
+    "build:example": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",
     "clean": "ocamlbuild -clean",
     "start": "_build/examples/ex01.native"
   }
