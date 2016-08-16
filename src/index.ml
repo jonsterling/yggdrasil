@@ -58,16 +58,18 @@ end = struct
   let ap op sp =
     Ap { op; sp }
 
-  let pp fmt = function
+  let pp fmt ar =
+    let open Format in
+    match ar with
     | Ap { op; sp = [] } ->
-      Format.fprintf fmt "%a"
+      fprintf fmt "%a"
         Op.pp op
     | Ap { op; sp } ->
-      Format.fprintf fmt "%a@ %a"
+      fprintf fmt "%a@ %a"
         Op.pp op
         Sp.pp sp
     | Id { tp } ->
-      Format.fprintf fmt "id[%a]"
+      fprintf fmt "id[%a]"
         Tp.pp tp
 
   let show = Util.show pp
@@ -286,6 +288,7 @@ module Examples = struct
   open Ar
   open Computad
   open Decl
+  open Format
   open Tm
 
   let sg =
@@ -384,12 +387,12 @@ module Examples = struct
 
   let normalize term =
     let norm = Computad.normTm sg term in
-    Format.fprintf Format.std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
+    fprintf std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
       Tm.pp term
       Tm.pp norm
 
   let () =
-    Format.fprintf Format.std_formatter "%a"
+    fprintf std_formatter "%a"
       Computad.pp sg
 
   let () =
