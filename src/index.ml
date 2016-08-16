@@ -276,7 +276,7 @@ module Examples = struct
   let sg =
     init
   let star =
-    op "*"
+    op "type"
 
   let sg =
     bind sg 0 ("bool" <! star)
