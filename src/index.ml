@@ -84,33 +84,41 @@ end
 
 module Ar : sig
   type t = {
-    dom : Sp.t;
+    dom : t list;
     cod : Tm.t;
   } [@@deriving eq, ord, show]
-  val ( --> ) : Sp.t -> Tm.t -> t
+  val ( --> ) : t list -> Tm.t -> t
+  val pt : Tm.t -> t
 end = struct
   type t = {
-    dom : Sp.t;
+    dom : t list;
     cod : Tm.t;
   } [@@deriving eq, ord]
 
-  let pp fmt = function
+  let rec pp fmt ar =
+    let open Format in
+    match ar with
     | { dom = []; cod } ->
-      Format.fprintf fmt "%a"
+      fprintf fmt "%a"
         Tm.pp cod
     | { dom = [ dom ]; cod } ->
-      Format.fprintf fmt "%a@ ->@ %a"
-        Tm.pp dom
+      fprintf fmt "%a@ ->@ %a"
+        pp dom
         Tm.pp cod
     | { dom; cod } ->
-      Format.fprintf fmt "%a@ ->@ %a"
-        Sp.pp dom
+      let sep fmt () =
+        fprintf fmt "@,,@ " in
+      fprintf fmt "[%a]@ ->@ %a"
+        (pp_print_list ~pp_sep:sep pp) dom
         Tm.pp cod
 
   let show = Util.show pp
 
   let ( --> ) dom cod =
     { dom; cod }
+
+  let pt cod =
+    { dom = []; cod }
 end
 
 module Decl : sig
@@ -118,7 +126,7 @@ module Decl : sig
     op : Op.t;
     ar : Ar.t;
   } [@@deriving eq, ord, show]
-  val source : t -> Sp.t
+  val source : t -> Ar.t list
   val target : t -> Tm.t
   val ( <: ) : Op.t -> Ar.t -> t
   val ( <! ) : Op.t -> Tm.t -> t
@@ -137,7 +145,7 @@ end = struct
   let ( <: ) op ar =
     { op; ar }
   let ( <! ) op cod =
-    { op; ar = [] --> cod }
+    { op; ar = pt cod }
 end
 
 module Computad : sig
@@ -233,7 +241,7 @@ end = struct
     dms = Map.add op dm sg.dms;
     ars = Map.add op ar sg.ars;
     prs = match [@warning "-4"] ar with
-      | { dom = [ Ap { op = theta; sp } ]; _ } when dm > 1 ->
+      | { dom = [ { dom = []; cod = Ap { op = theta; sp } } ]; _ } when dm > 1 ->
         let update = function
           | None ->
             Some (Trie.add sp (ar.cod, op) Trie.empty)
@@ -292,9 +300,9 @@ module Examples = struct
   let sg =
     bind sg 1 ("tt" <! bool)
   let sg =
-    bind sg 1 ("not" <: [ bool ] --> bool)
+    bind sg 1 ("not" <: [ pt bool ] --> bool)
   let sg =
-    bind sg 1 ("con" <: [ bool; bool ] --> bool)
+    bind sg 1 ("con" <: [ pt bool; pt bool ] --> bool)
   let ff =
     op "ff"
   let tt =
@@ -305,22 +313,22 @@ module Examples = struct
     op "con"
 
   let sg =
-    bind sg 2 ("not-ff" <: [ "not" *@ [ ff ] ] --> tt)
+    bind sg 2 ("not-ff" <: [ pt @@ "not" *@ [ ff ] ] --> tt)
   let sg =
-    bind sg 2 ("not-tt" <: [ "not" *@ [ tt ] ] --> ff)
+    bind sg 2 ("not-tt" <: [ pt @@ "not" *@ [ tt ] ] --> ff)
   let not_ff =
     op "not-ff"
   let not_tt =
     op "not-tt"
 
   let sg =
-    bind sg 2 ("con-ff-ff" <: [ "con" *@ [ ff; ff ] ] --> ff)
+    bind sg 2 ("con-ff-ff" <: [ pt @@ "con" *@ [ ff; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-ff-tt" <: [ "con" *@ [ ff; tt ] ] --> ff)
+    bind sg 2 ("con-ff-tt" <: [ pt @@ "con" *@ [ ff; tt ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-ff" <: [ "con" *@ [ tt; ff ] ] --> ff)
+    bind sg 2 ("con-tt-ff" <: [ pt @@ "con" *@ [ tt; ff ] ] --> ff)
   let sg =
-    bind sg 2 ("con-tt-tt" <: [ "con" *@ [ tt; tt ] ] --> tt)
+    bind sg 2 ("con-tt-tt" <: [ pt @@ "con" *@ [ tt; tt ] ] --> tt)
   let con_ff_ff =
     op "con-ff-ff"
   let con_ff_tt =
@@ -341,7 +349,7 @@ module Examples = struct
     op "base"
 
   let sg =
-    bind sg 2 ("loop" <: [ base ] --> base )
+    bind sg 2 ("loop" <: [ pt base ] --> base )
   let loop =
     op "loop"
 
@@ -360,7 +368,7 @@ module Examples = struct
     op "one"
 
   let sg =
-    bind sg 2 ("segment" <: [ zero ] --> one )
+    bind sg 2 ("segment" <: [ pt zero ] --> one )
   let segment =
     op "segment"
 
