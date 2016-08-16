@@ -163,10 +163,24 @@ end = struct
         type t = Op.t
         let compare = Op.compare
       end)
-    let print pp_key pp_elt fmt map : unit =
+
+    let print_ops pp_key pp_elt fmt map : unit =
+      let open Format in
+      let assoc fmt (key, elt) =
+        fprintf fmt "@[<2>%a@ :@ %a@]"
+          pp_key key
+          pp_elt elt in
+      let list =
+        List.fast_sort
+        (fun (lhs, _) (rhs, _) -> Op.compare lhs rhs)
+        (to_list map) in
+      fprintf fmt "@[<v 2>@[@  @]%a@,@]"
+        (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
+
+    let print_rls pp_key pp_elt fmt map : unit =
       let open Format in
       let assoc  fmt (key, elt) =
-        fprintf fmt "@[<2>%a@ :@ %a@]"
+        fprintf fmt "@[<v 2>%a@[@ @][@,%a@,]@]"
           pp_key key
           pp_elt elt in
       let list = List.fast_sort (fun (lhs, _) (rhs, _) -> Op.compare lhs rhs) @@ to_list map in
@@ -187,6 +201,10 @@ end = struct
   end = struct
     let print fmt trie =
       let open Format in
+      let list =
+        List.fast_sort
+        (fun (_, (_, lhs)) (_, (_, rhs)) -> Op.compare lhs rhs)
+        (Trie.to_list trie) in
       let assoc fmt = function
         | ([ dom ], (cod, op)) ->
           fprintf fmt "@[%a@ :@ %a@ ->@ %a@]"
@@ -199,15 +217,15 @@ end = struct
             Sp.pp dom
             Tm.pp cod in
       fprintf fmt "@[<v>%a@]"
-        (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) (Trie.to_list trie)
+        (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
     type t = (Tm.t * Op.t) Trie.t [@printer print]
     [@@deriving show]
   end
 
   type t = {
-    ars : (Ar.t Map.t [@printer Map.print Op.pp Ar.pp]);
-    dms : (Dm.t Map.t [@printer Map.print Op.pp Dm.pp]);
-    prs : (Pr.t Map.t [@printer Map.print Op.pp Pr.pp]);
+    ars : (Ar.t Map.t [@printer Map.print_ops Op.pp Ar.pp]);
+    dms : (Dm.t Map.t [@printer Map.print_ops Op.pp Dm.pp]);
+    prs : (Pr.t Map.t [@printer Map.print_rls Op.pp Pr.pp]);
   } [@@deriving show]
 
   let init = {
