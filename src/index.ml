@@ -84,13 +84,13 @@ end
 
 module Ar : sig
   type t = {
-    dom : Tm.t list;
+    dom : Sp.t;
     cod : Tm.t;
   } [@@deriving eq, ord, show]
-  val ( --> ) : Tm.t list -> Tm.t -> t
+  val ( --> ) : Sp.t -> Tm.t -> t
 end = struct
   type t = {
-    dom : Tm.t list;
+    dom : Sp.t;
     cod : Tm.t;
   } [@@deriving eq, ord]
 
@@ -118,7 +118,7 @@ module Decl : sig
     op : Op.t;
     ar : Ar.t;
   } [@@deriving eq, ord, show]
-  val source : t -> Tm.t list
+  val source : t -> Sp.t
   val target : t -> Tm.t
   val ( <: ) : Op.t -> Ar.t -> t
   val ( <! ) : Op.t -> Tm.t -> t
