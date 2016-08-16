@@ -1,3 +1,14 @@
+module Util : sig
+  val show : (Format.formatter -> 'a -> unit) -> ('a -> string)
+end = struct
+  let show pp_obj obj =
+    let buffer = Buffer.create 0 in
+    let fmt = Format.formatter_of_buffer buffer in
+    let () = pp_obj fmt obj in
+    let () = Format.pp_print_flush fmt () in
+    Buffer.contents buffer
+end
+
 module Dm = struct
   type t = int
   [@@deriving eq, ord, show]
@@ -27,12 +38,7 @@ end = struct
     fprintf fmt "[@[<2>%a@]]"
       (pp_print_list ~pp_sep:sep Tm.pp) sp
 
-  let show sp =
-    let buffer = Buffer.create 0 in
-    let fmt = Format.formatter_of_buffer buffer in
-    let () = pp fmt sp in
-    let () = Format.pp_print_flush fmt () in
-    Buffer.contents buffer
+  let show = Util.show pp
 end
 
 and Tm : sig
@@ -69,12 +75,7 @@ end = struct
       Format.fprintf fmt "id[%a]"
         Tp.pp tp
 
-  let show tm =
-    let buffer = Buffer.create 0 in
-    let fmt = Format.formatter_of_buffer buffer in
-    let () = pp fmt tm in
-    let () = Format.pp_print_flush fmt () in
-    Buffer.contents buffer
+  let show = Util.show pp
 
   let op op =
     ap op []
@@ -109,12 +110,7 @@ end = struct
         Sp.pp dom
         Tm.pp cod
 
-  let show ar =
-    let buffer = Buffer.create 0 in
-    let fmt = Format.formatter_of_buffer buffer in
-    let () = pp fmt ar in
-    let () = Format.pp_print_flush fmt () in
-    Buffer.contents buffer
+  let show = Util.show pp
 
   let ( --> ) dom cod =
     { dom; cod }
