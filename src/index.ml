@@ -65,7 +65,7 @@ end = struct
       fprintf fmt "%a"
         Op.pp op
     | Ap { op; sp } ->
-      fprintf fmt "%a %a"
+      fprintf fmt "@[%a@ %a@]"
         Op.pp op
         Sp.pp sp
     | Id { tp } ->
@@ -100,13 +100,13 @@ end = struct
       fprintf fmt "%a"
         Tm.pp cod
     | { dom = [ dom ]; cod } ->
-      fprintf fmt "%a@ ->@ %a"
+      fprintf fmt "%a@,@ @[->@ %a@]"
         pp dom
         Tm.pp cod
     | { dom; cod } ->
       let sep fmt () =
         fprintf fmt "@,,@ " in
-      fprintf fmt "[%a]@ ->@ %a"
+      fprintf fmt "[%a]@,@ @[->@ %a@]"
         (pp_print_list ~pp_sep:sep pp) dom
         Tm.pp cod
 
@@ -207,12 +207,12 @@ end = struct
           (Trie.to_list trie) in
       let assoc fmt = function
         | ([ dom ], (cod, op)) ->
-          fprintf fmt "@[<2>%a@ :@ %a@ ->@ %a@]"
+          fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
             Op.pp op
             Tm.pp dom
             Tm.pp cod
         | (dom, (cod, op)) ->
-          fprintf fmt "@[<2>%a@ :@ %a@ ->@ %a@]"
+          fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
             Op.pp op
             Sp.pp dom
             Tm.pp cod in
