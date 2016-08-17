@@ -96,27 +96,44 @@ let sg =
 
 let normalize term =
   let norm = Computad.normTm sg term in
-  fprintf std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
+  let () =
+    fprintf std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
     Syntax.Term.pp term
-    Syntax.Term.pp norm
+    Syntax.Term.pp norm in
+  norm
 
 let () =
   fprintf std_formatter "%a"
     Computad.pp sg
 
 let () =
-  normalize @@ "not" *@ [ ff ]
+  let res = normalize @@ "not" *@ [ ff ] in
+  assert (res = tt)
+
 let () =
-  normalize @@ "not" *@ [ tt ]
+  let res = normalize @@ "not" *@ [ tt ] in
+  assert (res = ff)
+
 let () =
-  normalize @@ "con" *@ [ ff; ff ]
+  let res = normalize @@ "con" *@ [ ff; ff ] in
+  assert (res = ff)
+
 let () =
-  normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ]
+  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ] in
+  assert (res = ff)
+
 let () =
-  normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ]
+  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ] in
+  assert (res = tt)
+
 let () =
-  normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ]
+  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ] in
+  assert (res = tt)
+
 let () =
-  normalize @@ "map" *@ [ succ; nil ]
+  let res = normalize @@ "map" *@ [ succ; nil ] in
+  assert (res = nil)
+
 let () =
-  normalize @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ]
+  let res = normalize @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] in
+  assert (res = "cons" *@ [ "succ" *@ [ zero ]; nil ])
