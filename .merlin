@@ -2,6 +2,6 @@ B _build/**
 S src/**
 PKG containers
 PKG containers.data
-PKG ppx_deriving
+PKG lwt.ppx
 PKG ppx_deriving.std
 FLG -short-paths -w +a-6-30-32-39-41-42-48

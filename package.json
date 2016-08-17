@@ -17,7 +17,7 @@
     "url": "https://github.com/freebroccolo/yggdrasil/issues"
   },
   "scripts": {
-    "prepublish": "opam install containers ppx_deriving && npm run build",
+    "prepublish": "opam install containers lwt ppx_deriving && npm run build",
     "build": "npm run build:index && npm run build:example",
     "build:index": "ocamlbuild -j 0 -use-ocamlfind -no-links src/Yggdrasil.cmxa",
     "build:example": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",

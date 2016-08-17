@@ -2,6 +2,8 @@ Arity
 Computad
 Declaration
 Dimension
+Lexer
 Operator
 Pretty
 Syntax
+Token
