@@ -1,8 +1,11 @@
 B _build/**
 S src/**
+PKG cats
 PKG cmdliner
 PKG containers
 PKG containers.data
+PKG fmt
 PKG lwt.ppx
+PKG menhirLib
 PKG ppx_deriving.std
 FLG -short-paths -w +a-6-30-32-39-41-42-48

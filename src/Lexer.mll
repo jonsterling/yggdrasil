@@ -47,7 +47,7 @@ rule token = parse
   | whitespace
 { token lexbuf }
   | eof
-{ exit 0 }
+{ Lwt.return EOF }
   | _
 { Lwt_io.printlf "Unexpected char: %s" (lexeme lexbuf) >> token lexbuf }
 

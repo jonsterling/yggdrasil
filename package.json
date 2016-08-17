@@ -17,10 +17,10 @@
     "url": "https://github.com/freebroccolo/yggdrasil/issues"
   },
   "scripts": {
-    "prepublish": "opam install cmdliner containers lwt ppx_deriving && npm run build",
+    "prepublish": "opam pin add cats git://github.com/freebroccolo/ocaml-cats && opam install cmdliner containers fmt lwt ppx_deriving && npm run build",
     "build": "npm run build:index && npm run build:example",
-    "build:index": "ocamlbuild -j 0 -use-ocamlfind -no-links src/index.native",
-    "build:lib": "ocamlbuild -j 0 -use-ocamlfind -no-links src/Yggdrasil.cmxa",
+    "build:index": "ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/index.native",
+    "build:lib": "ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/Yggdrasil.cmxa",
     "build:example": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",
     "clean": "ocamlbuild -clean",
     "start:example": "_build/examples/ex01.native",

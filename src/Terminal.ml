@@ -1,10 +1,39 @@
 let act_parse file_name =
+  let module P = Parser.Id in
+  let module M = P.MenhirInterpreter in
   let module T = Token in
+  let pos = Lexing.dummy_pos in
   let%lwt ix = Lwt_io.open_file ~mode:Lwt_io.Input file_name in
   let tokens = Lexer.tokens ix in
-  Lwt_stream.iter begin fun tok ->
-    Printf.printf "%s\n" @@ Token.show_token tok
-  end tokens
+  let parse () : string list M.checkpoint = P.Incremental.main pos in
+  let rec handler chk =
+    match chk with
+    | M.AboutToReduce _ ->
+      handler @@ M.resume chk
+    | M.Accepted res ->
+      let buf = Buffer.create 0 in
+      let ppf = Format.formatter_of_buffer buf in
+      let pp_ids ppf =
+        let sep ppf () = Format.fprintf ppf "@," in
+        Fmt.list ~sep Fmt.string ppf in
+      let () = Format.fprintf ppf "@[<v>%a@]" pp_ids res in
+      let () = Format.pp_print_flush ppf () in
+      Lwt_io.printl @@ Buffer.contents buf
+    | M.HandlingError _ ->
+      Lwt.fail_with "parser: handling error"
+    | M.InputNeeded _ ->
+      begin
+        match%lwt Lwt_stream.get tokens with
+        | None ->
+          Lwt.fail_with "parser: token stream ended prematurely"
+        | Some lexeme ->
+          handler @@ M.offer chk (lexeme, pos, pos)
+      end
+    | M.Rejected ->
+      Lwt.fail_with "parser: rejected"
+    | M.Shifting _ ->
+      handler @@ M.resume chk in
+  handler @@ parse ()
 
 open Cmdliner
 

@@ -4,6 +4,8 @@ Declaration
 Dimension
 Lexer
 Operator
+Parser
+ParserSpec
 Pretty
 Syntax
 Terminal
