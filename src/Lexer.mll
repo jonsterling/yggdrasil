@@ -46,6 +46,8 @@ rule token = parse
 { new_line lexbuf; token lexbuf }
   | whitespace
 { token lexbuf }
+  | eof
+{ exit 0 }
   | _
 { Lwt_io.printlf "Unexpected char: %s" (lexeme lexbuf) >> token lexbuf }
 
