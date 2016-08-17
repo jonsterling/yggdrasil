@@ -13,8 +13,21 @@ end
 module Make (R : SOURCE) : LEXER = struct
   let refill_handler k lexbuf =
     R.on_refill lexbuf >> k lexbuf
+
+  let make_table num elems =
+    let table = Hashtbl.create num in
+    List.iter (fun (k, v) -> Hashtbl.add table k v) elems;
+    table
+
   let keywords =
-    Hashtbl.create 0
+    make_table 1 [
+      ("cell", KEYWORD_CELL);
+      ("computad", KEYWORD_COMPUTAD);
+      ("->", KEYWORD_FUN);
+      ("@@normalize", KEYWORD_NORMALIZE);
+      ("sign", KEYWORD_SIGN);
+      ("*", KEYWORD_STAR);
+    ]
 }
 
 let line_ending
@@ -42,6 +55,14 @@ rule token = parse
   with Not_found ->
     Lwt.return (IDENTIFIER input)
 }
+  | '('
+{ Lwt.return LEFT_PARENTHESIS }
+  | '['
+{ Lwt.return LEFT_SQUARE_BRACKET }
+  | ')'
+{ Lwt.return RIGHT_PARENTHESIS }
+  | ']'
+{ Lwt.return RIGHT_SQUARE_BRACKET }
   | line_ending
 { new_line lexbuf; token lexbuf }
   | whitespace

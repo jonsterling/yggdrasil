@@ -18,12 +18,13 @@
   },
   "scripts": {
     "prepublish": "opam pin add cats git://github.com/freebroccolo/ocaml-cats && opam install cmdliner containers fmt lwt ppx_deriving && npm run build",
-    "build": "npm run build:index && npm run build:example",
+    "build": "npm run build:index && npm run build:lib && npm run build:tests",
     "build:index": "ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/index.native",
     "build:lib": "ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/Yggdrasil.cmxa",
-    "build:example": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src examples/ex01.native",
+    "build:tests": "ocamlbuild -j 0 -use-ocamlfind -no-links -I src tests/test00.native",
     "clean": "ocamlbuild -clean",
-    "start:example": "_build/examples/ex01.native",
-    "start": "_build/src/index.native"
+    "test": "_build/tests/test00.native",
+    "start": "_build/src/index.native",
+    "start:example": "npm start -- parse examples/ex00.ygg"
   }
 }

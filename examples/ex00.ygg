@@ -1,0 +1,21 @@
+(computad booleans
+  (sign types
+    (cell bool star))
+  (sign terms
+    (cell ff bool)
+    (cell tt bool)
+    (cell not (-> bool bool))
+    (cell and (-> [bool bool] bool)))
+  (sign rules
+    (cell not/ff (-> (not ff) tt))
+    (cell not/tt (-> (not tt) ff))
+    (cell and/ff/ff (-> (and ff ff) ff))
+    (cell and/ff/tt (-> (and ff tt) ff))
+    (cell and/tt/ff (-> (and tt ff) ff))
+    (cell and/tt/tt (-> (and tt tt) tt)))
+  (@@normalize (not ff))
+  (@@normalize (not tt))
+  (@@normalize (and ff ff))
+  (@@normalize (and (and tt tt) ff))
+  (@@normalize (and (and tt tt) tt))
+  (@@normalize (and (and tt tt) (not ff))))

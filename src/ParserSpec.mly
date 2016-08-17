@@ -6,27 +6,161 @@
 
 %token EOF
 %token <string> IDENTIFIER
+%token KEYWORD_CELL
+%token KEYWORD_COMPUTAD
+%token KEYWORD_FUN
+%token KEYWORD_NORMALIZE
+%token KEYWORD_SIGN
+%token KEYWORD_STAR
+%token LEFT_PARENTHESIS
+%token LEFT_SQUARE_BRACKET
+%token RIGHT_PARENTHESIS
+%token RIGHT_SQUARE_BRACKET
 
-%start <string list M.T.el> main
+%type <Syntax.Term.t> application
+%type <Arity.t list> arity_dom
+%type <Syntax.Term.t> arity_cod
+%type <Arity.t> arity
+%type <Operator.t> operator
+%type <Syntax.Spine.t> spine
+%type <Syntax.Term.t> term
+
+%start <Computad.t M.T.el> computad
 
 %%
 
-main:
-  | mds = identifiers EOF
-{ mds }
+arity_dom:
+  | LEFT_SQUARE_BRACKET
+  ; dom = list(arity)
+  ; RIGHT_SQUARE_BRACKET
+{
+  dom
+}
+  | dom = arity
+{
+  dom :: []
+}
   ;
 
-identifier:
-  | id = IDENTIFIER
-{ M.pure id }
+arity_cod:
+  | KEYWORD_STAR
+{
+  Syntax.Term.op "*"
+}
+  | tm = term
+{
+  tm
+}
   ;
 
-identifiers:
-  |
-{ M.pure [] }
-  | mid  = identifier
-  ; mids = identifiers
-{ M.bind mid  @@ fun id  ->
-  M.bind mids @@ fun ids ->
-  M.pure @@ id::ids }
+arity:
+  | LEFT_PARENTHESIS
+  ; KEYWORD_FUN
+  ; dom = arity_dom
+  ; cod = arity_cod
+  ; RIGHT_PARENTHESIS
+{
+  let open Arity in
+  { dom; cod }
+}
+  | cod = arity_cod
+{
+  let open Arity in
+  { dom = []; cod }
+}
+  ;
+
+cell:
+  | LEFT_PARENTHESIS
+  ; KEYWORD_CELL
+  ; op = IDENTIFIER
+  ; ar = arity
+  ; RIGHT_PARENTHESIS
+{
+  fun (gamma, i) ->
+    let open Declaration in
+    let gamma = Computad.bind gamma i { op; ar } in
+    (gamma, i)
+}
+  ;
+
+computad:
+  | LEFT_PARENTHESIS
+  ; KEYWORD_COMPUTAD
+  ; IDENTIFIER
+  ; items = list(computad_item)
+  ; RIGHT_PARENTHESIS
+  ; EOF
+{
+  let (gamma, _) = List.fold_left (fun ctx f -> f ctx) (Computad.init, 0) items in
+  M.pure gamma
+}
+  ;
+
+computad_item:
+  | sign = sign
+{
+  sign
+}
+  | LEFT_PARENTHESIS
+  ; KEYWORD_NORMALIZE
+  ; term = term
+  ; RIGHT_PARENTHESIS
+{
+  fun (gamma, i) ->
+    let open Format in
+    let norm = Computad.normTm gamma term in
+    fprintf std_formatter "@[<hv>term:@ %a\nnorm:@ %a@]@\n@."
+      Syntax.Term.pp term
+      Syntax.Term.pp norm;
+    (gamma, i)
+}
+  ;
+
+application:
+  | op = operator
+{
+  Syntax.Term.Ap { op; sp = [] }
+}
+  | LEFT_PARENTHESIS
+  ; op = operator
+  ; sp = spine
+  ; RIGHT_PARENTHESIS
+{
+  Syntax.Term.Ap { op; sp }
+}
+  ;
+
+operator:
+  | op = IDENTIFIER
+{
+  op
+}
+  ;
+
+sign:
+  | LEFT_PARENTHESIS
+  ; KEYWORD_SIGN
+  ; IDENTIFIER
+  ; cells = list(cell)
+  ; RIGHT_PARENTHESIS
+{
+  fun (gamma, i) ->
+    let (gamma, i) = List.fold_left (fun ctx f -> f ctx) (gamma, i) cells in
+    (gamma, i + 1)
+}
+  ;
+
+spine:
+  | sp = nonempty_list(term)
+{
+  sp
+}
+  ;
+
+term:
+  | tm = application
+{
+  tm
+}
   ;

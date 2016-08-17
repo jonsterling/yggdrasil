@@ -18,8 +18,14 @@ npm install
 
 #### Running
 
-Note: currently this prints out some syntax
+Run the command line interface:
 
 ```sh
-npm start
+$ npm start -- help
+```
+
+Run the examples:
+
+```sh
+$ npm run start:example
 ```
