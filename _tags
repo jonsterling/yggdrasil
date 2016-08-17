@@ -1,7 +1,9 @@
 true: bin_annot
+true: package(cmdliner)
 true: package(containers)
 true: package(containers.data)
 true: package(lwt.ppx)
+true: package(lwt.unix)
 true: package(ppx_deriving.std)
 true: short_paths
 true: warn(+a-6-30-32-39-41-42-48)

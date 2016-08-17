@@ -6,4 +6,5 @@ Lexer
 Operator
 Pretty
 Syntax
+Terminal
 Token

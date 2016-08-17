@@ -1,5 +1,6 @@
 B _build/**
 S src/**
+PKG cmdliner
 PKG containers
 PKG containers.data
 PKG lwt.ppx
