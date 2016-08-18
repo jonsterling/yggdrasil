@@ -18,10 +18,10 @@
 %token RIGHT_SQUARE_BRACKET
 
 %type <Syntax.Term.t> application
-%type <Arity.t list> arity_dom
+%type <Syntax.Arity.t list> arity_dom
 %type <Syntax.Term.t> arity_cod
-%type <Arity.t> arity
-%type <Operator.t> operator
+%type <Syntax.Arity.t> arity
+%type <Syntax.Operator.t> operator
 %type <Syntax.Spine.t> spine
 %type <Syntax.Term.t> term
 
@@ -60,12 +60,12 @@ arity:
   ; cod = arity_cod
   ; RIGHT_PARENTHESIS
 {
-  let open Arity in
+  let open Syntax.Arity in
   { dom; cod }
 }
   | cod = arity_cod
 {
-  let open Arity in
+  let open Syntax.Arity in
   { dom = []; cod }
 }
   ;
@@ -78,7 +78,7 @@ cell:
   ; RIGHT_PARENTHESIS
 {
   fun (gamma, i) ->
-    let open Declaration in
+    let open Syntax.Cell in
     let gamma = Computad.bind gamma i { op; ar } in
     (gamma, i)
 }

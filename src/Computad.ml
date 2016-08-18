@@ -1,6 +1,4 @@
-open Arity
-open Declaration
-open Syntax.Term
+open Syntax
 
 module Map = struct
   include CCMap.Make(struct
@@ -78,16 +76,16 @@ let init = {
   prs = Map.empty;
 }
 
-let bind sg dm { op; ar } = {
+let bind sg dm { Cell.op; ar } = {
   dms = Map.add op dm sg.dms;
   ars = Map.add op ar sg.ars;
   prs = match [@warning "-4"] ar with
-    | { dom = [ { dom = []; cod = Ap { op = theta; sp } } ]; _ } when dm > 1 ->
+    | { Arity.dom = [ { Arity.dom = []; cod = Term.Ap { op = theta; sp } } ]; _ } when dm > 1 ->
       let update = function
         | None ->
-          Some (Trie.add sp (ar.cod, op) Trie.empty)
+          Some (Trie.add sp (ar.Arity.cod, op) Trie.empty)
         | Some pre ->
-          Some (Trie.add sp (ar.cod, op) pre) in
+          Some (Trie.add sp (ar.Arity.cod, op) pre) in
       Map.update theta update sg.prs
     | _ ->
       sg.prs
@@ -101,7 +99,7 @@ let dimen sg op =
 
 let rec stepTm sg tm =
   match [@warning "-4"] tm with
-  | Ap { op; sp } ->
+  | Term.Ap { op; sp } ->
     let sp = stepSp sg sp in
     begin
       (* Try to look up the normalization rule. For now we assume that if
@@ -113,7 +111,7 @@ let rec stepTm sg tm =
         let (res, _) = Trie.find_exn sp prs in
         res
       with Not_found ->
-        Ap { op; sp }
+        Term.Ap { op; sp }
     end
 
 and stepSp sg sp =

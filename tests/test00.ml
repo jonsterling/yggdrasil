@@ -1,7 +1,7 @@
-open Arity
 open Computad
-open Declaration
 open Format
+open Syntax.Arity
+open Syntax.Cell
 open Syntax.Term
 
 let sg =
