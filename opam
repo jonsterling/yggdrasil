@@ -1,0 +1,16 @@
+opam-version: "1.2.2"
+name: "yggdrasil"
+version: "0.0.0"
+maintainer: "Darin Morrison <freebroccolo@users.noreply.github.com>"
+authors: [ "Darin Morrison" ]
+license: "MIT"
+homepage: "https://github.com/freebroccolo/yggdrasil"
+dev-repo: "https://github.com/freebroccolo/yggdrasil.git"
+bug-reports: "https://github.com/freebroccolo/yggdrasil/issues"
+depends: [
+  "cmdliner"
+  "containers"
+  "fmt"
+  "lwt"
+  "ppx_deriving"
+]

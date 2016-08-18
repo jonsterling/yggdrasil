@@ -8,24 +8,25 @@ Prerequisites:
 
 * OCaml `4.03.0`
 * OPAM `1.2.2`
-* Node
 
 ```sh
 git clone https://github.com/freebroccolo/yggdrasil
 cd yggdrasil
-npm install
+make install
 ```
+
+This will compile the project and place binaries in the local `bin` directory.
 
 #### Running
 
 Run the command line interface:
 
 ```sh
-$ npm start -- help
+$ bin/yggdrasil help
 ```
 
-Run the examples:
+Run an examples:
 
 ```sh
-$ npm run start:example
+$ bin/yggdrasil parse examples/ex00.ygg
 ```
