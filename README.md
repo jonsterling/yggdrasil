@@ -10,9 +10,9 @@ Prerequisites:
 * OPAM `1.2.2`
 
 ```sh
-git clone https://github.com/freebroccolo/yggdrasil
-cd yggdrasil
-make install
+$ git clone https://github.com/freebroccolo/yggdrasil
+$ cd yggdrasil
+$ make install
 ```
 
 This will compile the project and place binaries in the local `bin` directory.
@@ -25,7 +25,7 @@ Run the command line interface:
 $ bin/yggdrasil help
 ```
 
-Run an examples:
+Run an example:
 
 ```sh
 $ bin/yggdrasil parse examples/ex00.ygg
