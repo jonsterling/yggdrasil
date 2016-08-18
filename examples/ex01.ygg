@@ -1,0 +1,15 @@
+(computad lists
+  (sign types
+    (cell nat star)
+    (cell list star))
+  (sign terms
+    (cell zero nat)
+    (cell succ nat)
+    (cell add (-> [nat nat] nat))
+    (cell nil list)
+    (cell cons (-> [nat list] list))
+    (cell map (-> [(-> nat nat) list] list)))
+  (sign rules
+    (cell map/nil (-> (map succ nil) nil))
+    (cell map/cons (-> (map succ (cons zero nil)) (cons (succ zero) (map succ nil)))))
+  (@@normalize (map succ (cons zero nil))))

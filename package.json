@@ -25,6 +25,6 @@
     "clean": "ocamlbuild -clean",
     "test": "_build/tests/test00.native",
     "start": "_build/src/index.native",
-    "start:example": "npm start -- parse examples/ex00.ygg"
+    "start:example": "for e in `ls examples/*.ygg`; do printf '\n* %s\n\n' $e && _build/src/index.native parse $e; done"
   }
 }
