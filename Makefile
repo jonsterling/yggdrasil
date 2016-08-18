@@ -39,5 +39,5 @@ lib:
 links: bin/yggdrasil
 
 test: lib
-	@ocamlbuild -j 0 -use-ocamlfind -no-links -I src tests/test00.native
+	@ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib tests/test00.native
 	@_build/tests/test00.native

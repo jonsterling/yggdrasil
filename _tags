@@ -12,3 +12,4 @@ true: short_paths
 true: warn(+a-6-30-32-39-41-42-48)
 true: warn_error(A)
 <src/tools/**/*>: use_yggdrasil
+<tests/**/*>: use_yggdrasil
