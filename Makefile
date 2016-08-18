@@ -5,7 +5,8 @@ all: lib links tools
 bin:
 	@mkdir -p bin
 
-bin/yggdrasil: bin tools
+bin/yggdrasil: bin
+	@ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib src/tools/yggdrasil.native
 	@ln -sf ${PWD}/_build/src/tools/yggdrasil.native bin/yggdrasil
 
 clean:
@@ -21,8 +22,7 @@ examples: tools
 		bin/yggdrasil parse examples/$$e;\
 	done
 
-tools: lib
-	@ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib src/tools/yggdrasil.native
+tools: bin/yggdrasil
 
 install:
 	@opam list -i cats > /dev/null || opam pin add cats git://github.com/freebroccolo/ocaml-cats --yes

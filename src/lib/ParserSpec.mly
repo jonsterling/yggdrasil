@@ -6,6 +6,7 @@
 
 %token EOF
 %token <string> IDENTIFIER
+%token KEYWORD_ANALYZE
 %token KEYWORD_CELL
 %token KEYWORD_COMPUTAD
 %token KEYWORD_FUN
@@ -18,11 +19,11 @@
 %token RIGHT_SQUARE_BRACKET
 
 %type <Syntax.Term.t> application
-%type <Syntax.Arity.t list> arity_dom
+%type <Syntax.Term.t Syntax.Spine.t> arity_dom
 %type <Syntax.Term.t> arity_cod
 %type <Syntax.Arity.t> arity
 %type <Syntax.Operator.t> operator
-%type <Syntax.Spine.t> spine
+%type <Syntax.Term.t Syntax.Spine.t> spine
 %type <Syntax.Term.t> term
 
 %start <Computad.t M.T.el> computad
@@ -31,12 +32,12 @@
 
 arity_dom:
   | LEFT_SQUARE_BRACKET
-  ; dom = list(arity)
+  ; dom = list(term)
   ; RIGHT_SQUARE_BRACKET
 {
   dom
 }
-  | dom = arity
+  | dom = term
 {
   dom :: []
 }
@@ -103,6 +104,21 @@ computad_item:
   sign
 }
   | LEFT_PARENTHESIS
+  ; KEYWORD_ANALYZE
+  ; term = term
+  ; RIGHT_PARENTHESIS
+{
+  fun (gamma, i) ->
+    let open Format in
+    let arity = Checker.term_infer_infer gamma term in
+    let value = Computad.normTm gamma term in
+    fprintf std_formatter "@[<v>@[<hv>input:@ %a@]@,@[arity:@ %a@]@,@[value:@ %a@]@,@.@]"
+      Syntax.Term.pp term
+      Syntax.Arity.pp arity
+      Syntax.Term.pp value;
+    (gamma, i)
+}
+  | LEFT_PARENTHESIS
   ; KEYWORD_NORMALIZE
   ; term = term
   ; RIGHT_PARENTHESIS
@@ -110,7 +126,7 @@ computad_item:
   fun (gamma, i) ->
     let open Format in
     let norm = Computad.normTm gamma term in
-    fprintf std_formatter "@[<hv>term:@ %a\nnorm:@ %a@]@\n@."
+    fprintf std_formatter "@[<v>@[<hv>input:@ %a@]@,@[norm:@ %a@]@,@.@]"
       Syntax.Term.pp term
       Syntax.Term.pp norm;
     (gamma, i)

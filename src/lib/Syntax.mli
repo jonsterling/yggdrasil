@@ -8,7 +8,7 @@ module Operator : sig
 end
 
 module rec Spine : sig
-  type t = Term.t list
+  type 'a t = 'a list
   [@@deriving eq, ord, show]
 end
 
@@ -16,21 +16,22 @@ and Term : sig
   type t =
     | Ap of {
       op : Operator.t;
-      sp : Spine.t;
+      sp : t Spine.t;
     }
   [@@deriving eq, ord, show]
-  val ( *@ ) : Operator.t -> Spine.t -> t
-  val ap : Operator.t -> Spine.t -> t
+  val ( *@ ) : Operator.t -> t Spine.t -> t
+  val ap : Operator.t -> t Spine.t -> t
   val op : Operator.t -> t
 end
 
 module Arity : sig
   type t = {
-    dom : t list;
+    dom : Term.t Spine.t;
     cod : Term.t;
   } [@@deriving eq, ord, show]
-  val ( --> ) : t list -> Term.t -> t
-  val pt : Term.t -> t
+  val ( --> ) : Term.t Spine.t -> Term.t -> t
+  val pt : 'a -> 'a
+  (*val pt : Term.t -> t*)
 end
 
 module Cell : sig
@@ -38,7 +39,7 @@ module Cell : sig
     op : Operator.t;
     ar : Arity.t;
   } [@@deriving eq, ord, show]
-  val source : t -> Arity.t list
+  val source : t -> Term.t Spine.t
   val target : t -> Term.t
   val ( <: ) : Operator.t -> Arity.t -> t
   val ( <! ) : Operator.t -> Term.t -> t

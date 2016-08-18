@@ -15,45 +15,45 @@ end = struct
 end
 
 module rec Spine : sig
-  type t = Term.t list
+  type 'a t = 'a list
   [@@deriving eq, ord, show]
 end = struct
-  type t = Term.t list
+  type 'a t = 'a list
   [@@deriving eq, ord]
 
-  let pp fmt sp =
+  let pp pp_elt fmt sp =
     let open Format in
     let sep fmt () =
       fprintf fmt "@,,@ " in
     fprintf fmt "[@[<2>%a@]]"
-      (pp_print_list ~pp_sep:sep Term.pp) sp
+      (pp_print_list ~pp_sep:sep pp_elt) sp
 
-  let show =
-    Pretty.show pp
+  let show pp_elt =
+    Pretty.show @@ pp pp_elt
 end
 
 and Term : sig
   type t =
     | Ap of {
       op : Operator.t;
-      sp : Spine.t;
+      sp : t Spine.t;
     }
   [@@deriving eq, ord, show]
-  val ( *@ ) : Operator.t -> Spine.t -> t
-  val ap : Operator.t -> Spine.t -> t
+  val ( *@ ) : Operator.t -> t Spine.t -> t
+  val ap : Operator.t -> t Spine.t -> t
   val op : Operator.t -> t
 end = struct
   type t =
     | Ap of {
       op : Operator.t;
-      sp : Spine.t;
+      sp : t Spine.t;
     }
   [@@deriving eq, ord]
 
   let ap op sp =
     Ap { op; sp }
 
-  let pp fmt ar =
+  let rec pp fmt ar =
     let open Format in
     match ar with
     | Ap { op; sp = [] } ->
@@ -62,7 +62,7 @@ end = struct
     | Ap { op; sp } ->
       fprintf fmt "@[%a@ %a@]"
         Operator.pp op
-        Spine.pp sp
+        (Spine.pp pp) sp
 
   let show =
     Pretty.show pp
@@ -76,14 +76,15 @@ end
 
 module Arity : sig
   type t = {
-    dom : t list;
+    dom : Term.t Spine.t;
     cod : Term.t;
   } [@@deriving eq, ord, show]
-  val ( --> ) : t list -> Term.t -> t
-  val pt : Term.t -> t
+  val ( --> ) : Term.t Spine.t -> Term.t -> t
+  val pt : 'a -> 'a
+  (*val pt : Term.t -> t*)
 end = struct
   type t = {
-    dom : t list;
+    dom : Term.t Spine.t;
     cod : Term.t;
   } [@@deriving eq, ord]
 
@@ -95,13 +96,13 @@ end = struct
         Term.pp cod
     | { dom = [ dom ]; cod } ->
       fprintf fmt "%a@,@ @[->@ %a@]"
-        pp dom
+        Term.pp dom
         Term.pp cod
     | { dom; cod } ->
       let sep fmt () =
         fprintf fmt "@,,@ " in
       fprintf fmt "[%a]@,@ @[->@ %a@]"
-        (pp_print_list ~pp_sep:sep pp) dom
+        (pp_print_list ~pp_sep:sep Term.pp) dom
         Term.pp cod
 
   let show =
@@ -110,8 +111,10 @@ end = struct
   let ( --> ) dom cod =
     { dom; cod }
 
-  let pt cod =
-    { dom = []; cod }
+  let pt x = x
+
+  (*let pt cod =
+    { dom = []; cod }*)
 end
 
 module Cell : sig
@@ -119,7 +122,7 @@ module Cell : sig
     op : Operator.t;
     ar : Arity.t;
   } [@@deriving eq, ord, show]
-  val source : t -> Arity.t list
+  val source : t -> Term.t Spine.t
   val target : t -> Term.t
   val ( <: ) : Operator.t -> Arity.t -> t
   val ( <! ) : Operator.t -> Term.t -> t
@@ -138,6 +141,8 @@ end = struct
   let ( <: ) op ar =
     { op; ar }
 
+  (*let ( <! ) op cod =
+    { op; ar = Arity.pt cod }*)
   let ( <! ) op cod =
-    { op; ar = Arity.pt cod }
+    { op; ar = { Arity.dom = []; cod } }
 end

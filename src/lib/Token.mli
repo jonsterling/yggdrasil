@@ -1,6 +1,7 @@
 type token =
   | EOF
   | IDENTIFIER of (string)
+  | KEYWORD_ANALYZE
   | KEYWORD_CELL
   | KEYWORD_COMPUTAD
   | KEYWORD_FUN

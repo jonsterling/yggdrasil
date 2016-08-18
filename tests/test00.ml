@@ -71,7 +71,7 @@ let zero =
 let succ =
   op "succ"
 
-let sg =
+(*let sg =
   bind sg 0 ("list" <! star)
 let list =
   op "list"
@@ -92,48 +92,50 @@ let map =
 let sg =
   bind sg 2 ("map/nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
 let sg =
-  bind sg 2 ("map/cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])
+  bind sg 2 ("map/cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])*)
 
-let normalize term =
-  let norm = Computad.normTm sg term in
+let analyze term =
+  let ar = Checker.term_infer_infer sg term in
+  let tm = Computad.normTm sg term in
   let () =
-    fprintf std_formatter "@.\n@[<hv>term:@ %a\nnorm:@ %a@]"
+    fprintf std_formatter "@.@\n@[<hv>term:@ %a@\ntype:@ %a@\nnorm:@ %a@]"
     Syntax.Term.pp term
-    Syntax.Term.pp norm in
-  norm
+    Syntax.Arity.pp ar
+    Syntax.Term.pp tm in
+  (ar, tm)
 
 let () =
   fprintf std_formatter "%a"
     Computad.pp sg
 
 let () =
-  let res = normalize @@ "not" *@ [ ff ] in
-  assert (res = tt)
+  let (_ar, tm) = analyze @@ "not" *@ [ ff ] in
+  assert (tm = tt)
 
 let () =
-  let res = normalize @@ "not" *@ [ tt ] in
-  assert (res = ff)
+  let (_ar, tm) = analyze @@ "not" *@ [ tt ] in
+  assert (tm = ff)
 
 let () =
-  let res = normalize @@ "con" *@ [ ff; ff ] in
-  assert (res = ff)
+  let (_ar, tm) = analyze @@ "con" *@ [ ff; ff ] in
+  assert (tm = ff)
 
 let () =
-  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ] in
-  assert (res = ff)
+  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ] in
+  assert (tm = ff)
 
 let () =
-  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ] in
-  assert (res = tt)
+  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ] in
+  assert (tm = tt)
 
 let () =
-  let res = normalize @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ] in
-  assert (res = tt)
+  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ] in
+  assert (tm = tt)
 
-let () =
+(*let () =
   let res = normalize @@ "map" *@ [ succ; nil ] in
   assert (res = nil)
 
 let () =
   let res = normalize @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] in
-  assert (res = "cons" *@ [ "succ" *@ [ zero ]; nil ])
+  assert (res = "cons" *@ [ "succ" *@ [ zero ]; nil ])*)

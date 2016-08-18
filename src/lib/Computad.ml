@@ -48,15 +48,15 @@ end = struct
         (fun (_, (_, lhs)) (_, (_, rhs)) -> Operator.compare lhs rhs)
         (Trie.to_list trie) in
     let assoc fmt = function
-      | ([ dom ], (cod, op)) ->
+      | ([ tm ], (cod, op)) ->
         fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
           Operator.pp op
-          Syntax.Term.pp dom
+          Syntax.Term.pp tm
           Syntax.Term.pp cod
       | (dom, (cod, op)) ->
         fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
           Operator.pp op
-          Syntax.Spine.pp dom
+          (Syntax.Spine.pp Term.pp) dom
           Syntax.Term.pp cod in
     fprintf fmt "@[<v>%a@]"
       (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
@@ -80,7 +80,7 @@ let bind sg dm { Cell.op; ar } = {
   dms = Map.add op dm sg.dms;
   ars = Map.add op ar sg.ars;
   prs = match [@warning "-4"] ar with
-    | { Arity.dom = [ { Arity.dom = []; cod = Term.Ap { op = theta; sp } } ]; _ } when dm > 1 ->
+    | { Arity.dom = [ Term.Ap { op = theta; sp } ]; _ } when dm > 1 ->
       let update = function
         | None ->
           Some (Trie.add sp (ar.Arity.cod, op) Trie.empty)

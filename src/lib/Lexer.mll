@@ -21,6 +21,7 @@ module Make (R : SOURCE) : LEXER = struct
 
   let keywords =
     make_table 1 [
+      ("@@analyze", KEYWORD_ANALYZE);
       ("cell", KEYWORD_CELL);
       ("computad", KEYWORD_COMPUTAD);
       ("->", KEYWORD_FUN);
