@@ -1,6 +1,6 @@
-.PHONY: all clean examples install lib links tests tools
+.PHONY: all clean examples install lib links tests tools top
 
-all: lib links tools
+all: lib links tools top
 
 bin:
 	@mkdir -p bin
@@ -41,3 +41,7 @@ links: bin/yggdrasil
 test: lib
 	@ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib tests/test00.native
 	@_build/tests/test00.native
+
+top:
+	@ocamlbuild -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/lib/yggdrasil.cma
+	@utop

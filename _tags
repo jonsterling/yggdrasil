@@ -7,9 +7,11 @@ true: package(fmt)
 true: package(lwt.ppx)
 true: package(lwt.unix)
 true: package(menhirLib)
+true: package(optics)
 true: package(ppx_deriving.std)
 true: short_paths
 true: warn(+a-6-30-32-39-41-42-48)
 true: warn_error(A)
+<src/lib/Yggdrasil/*.cmx>: for-pack(Yggdrasil)
 <src/tools/**/*>: use_yggdrasil
 <tests/**/*>: use_yggdrasil
