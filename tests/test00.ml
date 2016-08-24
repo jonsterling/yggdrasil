@@ -2,6 +2,7 @@ open Yggdrasil
 open Format
 open Syntax
 
+module A = Term.Arity
 module N = Term.Node
 module R = Term.Rose
 
@@ -10,103 +11,56 @@ open Term.Arity
 
 module Computad = Typing.Make(Computad.Std)
 
-let sg =
-  Computad.empty
-let star =
-  N.op "type"
+let sg = Computad.empty
+let star = N.op "type"
 
-let sg =
-  Computad.bind sg 0 ("bool" <! star)
-let bool =
-  N.op "bool"
+let sg = Computad.bind sg 0 ("bool" <! star)
+let bool = N.op "bool"
+let sg = Computad.bind sg 1 ("ff" <! bool)
+let sg = Computad.bind sg 1 ("tt" <! bool)
+let sg = Computad.bind sg 1 ("not" <: [ pt bool ] --> bool)
+let sg = Computad.bind sg 1 ("and" <: [ pt bool; pt bool ] --> bool)
+let ff = N.op "ff"
+let tt = N.op "tt"
+let not = N.op "not"
+let con = N.op "and"
+let sg = Computad.bind sg 2 ("not/ff" <: [ pt @@ not *@ [ pt ff ] ] --> tt)
+let sg = Computad.bind sg 2 ("not/tt" <: [ pt @@ not *@ [ pt tt ] ] --> ff)
+let sg = Computad.bind sg 2 ("and/ff/ff" <: [ pt @@ con *@ [ pt ff; pt ff ] ] --> tt)
+let sg = Computad.bind sg 2 ("and/ff/tt" <: [ pt @@ con *@ [ pt ff; pt tt ] ] --> tt)
+let sg = Computad.bind sg 2 ("and/tt/ff" <: [ pt @@ con *@ [ pt tt; pt ff ] ] --> tt)
+let sg = Computad.bind sg 2 ("and/tt/tt" <: [ pt @@ con *@ [ pt tt; pt tt ] ] --> tt)
+let and_ff_ff = N.op "and-ff-ff"
+let and_ff_tt = N.op "and-ff-tt"
+let and_tt_ff = N.op "and-tt-ff"
+let and_tt_tt = N.op "and-tt-tt"
 
-let sg =
-  Computad.bind sg 1 ("ff" <! bool)
-let sg =
-  Computad.bind sg 1 ("tt" <! bool)
-let sg =
-  Computad.bind sg 1 ("not" <: [ pt bool ] --> bool)
-let sg =
-  Computad.bind sg 1 ("con" <: [ pt bool; pt bool ] --> bool)
-let ff =
-  N.op "ff"
-let tt =
-  N.op "tt"
-let not =
-  N.op "not"
-let con =
-  N.op "con"
+let sg = Computad.bind sg 0 ("nat" <! star)
+let nat = N.op "nat"
+let sg = Computad.bind sg 1 ("zero" <! nat)
+let sg = Computad.bind sg 1 ("succ" <: [ pt nat ] --> nat)
+let sg = Computad.bind sg 1 ("add"  <: [ pt nat; pt nat ] --> nat)
+let zero = N.op "zero"
+let succ = N.op "succ"
+let add  = N.op "add"
 
-(*let sg =
-  bind sg 2 ("not/ff" <: [ pt @@ "not" *@ [ ff ] ] --> tt)
-let sg =
-  bind sg 2 ("not/tt" <: [ pt @@ "not" *@ [ tt ] ] --> ff)
-let not_ff =
-  op "not-ff"
-let not_tt =
-  op "not-tt"
-
-let sg =
-  bind sg 2 ("con/ff/ff" <: [ pt @@ "con" *@ [ ff; ff ] ] --> ff)
-let sg =
-  bind sg 2 ("con/ff/tt" <: [ pt @@ "con" *@ [ ff; tt ] ] --> ff)
-let sg =
-  bind sg 2 ("con/tt/ff" <: [ pt @@ "con" *@ [ tt; ff ] ] --> ff)
-let sg =
-  bind sg 2 ("con/tt/tt" <: [ pt @@ "con" *@ [ tt; tt ] ] --> tt)
-let con_ff_ff =
-  op "con-ff-ff"
-let con_ff_tt =
-  op "con-ff-tt"
-let con_tt_ff =
-  op "con-tt-ff"
-let con_tt_tt =
-  op "con-tt-tt"
-
-let sg =
-  bind sg 0 ("nat" <! star)
-let nat =
-  op "nat"
-
-let sg =
-  bind sg 1 ("zero" <! nat)
-let sg =
-  bind sg 1 ("succ" <: [ pt nat ] --> nat)
-let zero =
-  op "zero"
-let succ =
-  op "succ"
-
-(*let sg =
-  bind sg 0 ("list" <! star)
-let list =
-  op "list"
-
-let sg =
-  bind sg 1 ("nil" <! list)
-let sg =
-  bind sg 1 ("cons" <: [ pt nat; pt list ] --> list)
-let sg =
-  bind sg 1 ("map" <: [ [ pt nat ] --> nat; pt list ] --> list)
-let nil =
-  op "nil"
-let cons =
-  op "cons"
-let map =
-  op "map"
-
-let sg =
-  bind sg 2 ("map/nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
-let sg =
-  bind sg 2 ("map/cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])*)
-*)
+let sg = Computad.bind sg 0 ("list" <! star)
+let list = N.op "list"
+let sg = Computad.bind sg 1 ("nil" <! list)
+let sg = Computad.bind sg 1 ("cons" <: [ pt nat; pt list ] --> list)
+let sg = Computad.bind sg 1 ("map" <: [ [ pt nat] --> nat; pt list ] --> list)
+let nil = N.op "nil"
+let cons = N.op "cons"
+let map = N.op "map"
+let sg = Computad.bind sg 2 ("map/nil" <: [ pt @@ map *@ [ pt succ; pt nil ] ] --> nil)
+let sg = Computad.bind sg 2 ("map/cons" <: [ pt @@ map *@ [ pt succ; pt @@ cons *@ [ pt zero; pt nil ] ] ] --> cons *@ [ pt @@ succ *@ [ pt zero ]; pt nil ])
 
 let analyze node =
   let rose = Computad.Inf.Node.arity sg node in
   let () =
     fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
     N.pp node
-    R.pp rose
+    A.pp rose
   ; pp_print_flush std_formatter () in
   rose
 
@@ -118,31 +72,38 @@ let () =
   let rose = analyze @@ not *@ [ pt ff ] in
   assert (Rose.equal rose @@ pt bool)
 
-(*
 let () =
-  let (_ar, tm) = analyze @@ "not" *@ [ tt ] in
-  assert (tm = ff)
+  let rose = analyze @@ not *@ [ pt tt ] in
+  assert (Rose.equal rose @@ pt bool)
 
 let () =
-  let (_ar, tm) = analyze @@ "con" *@ [ ff; ff ] in
-  assert (tm = ff)
+  let rose = analyze @@ con *@ [] in
+  (assert (Rose.equal rose @@ [ pt bool; pt bool ] --> bool))
 
 let () =
-  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; ff ] in
-  assert (tm = ff)
+  let rose = analyze @@ con *@ [ pt ff ] in
+  (assert (Rose.equal rose @@ [ pt bool ] --> bool))
 
 let () =
-  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; tt ] in
-  assert (tm = tt)
+  let rose = analyze @@ con *@ [ pt ff; pt ff ] in
+  (assert (Rose.equal rose @@ pt bool))
 
 let () =
-  let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ] in
-  assert (tm = tt)*)
-
-(*let () =
-  let res = normalize @@ "map" *@ [ succ; nil ] in
-  assert (res = nil)
+  let rose = analyze @@ nil in
+  (assert (Rose.equal rose @@ pt list))
 
 let () =
-  let res = normalize @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] in
-  assert (res = "cons" *@ [ "succ" *@ [ zero ]; nil ])*)
+  let rose = analyze @@ cons in
+  (assert (Rose.equal rose @@ [ pt nat; pt list ] --> list))
+
+let () =
+  let rose = analyze @@ map in
+  (assert (Rose.equal rose @@ [ [ pt nat ] --> nat; pt list ] --> list))
+
+let () =
+  let rose = analyze @@ map *@ [ pt succ ] in
+  (assert (Rose.equal rose @@ [ pt list ] --> list))
+
+let () =
+  let rose = analyze @@ map *@ [ pt succ; pt nil ] in
+  (assert (Rose.equal rose @@ pt list))
