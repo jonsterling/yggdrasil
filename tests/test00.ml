@@ -26,9 +26,9 @@ let not = N.op "not"
 let con = N.op "and"
 let sg = Computad.bind sg 2 ("not/ff" <: [ pt @@ not *@ [ pt ff ] ] --> tt)
 let sg = Computad.bind sg 2 ("not/tt" <: [ pt @@ not *@ [ pt tt ] ] --> ff)
-let sg = Computad.bind sg 2 ("and/ff/ff" <: [ pt @@ con *@ [ pt ff; pt ff ] ] --> tt)
-let sg = Computad.bind sg 2 ("and/ff/tt" <: [ pt @@ con *@ [ pt ff; pt tt ] ] --> tt)
-let sg = Computad.bind sg 2 ("and/tt/ff" <: [ pt @@ con *@ [ pt tt; pt ff ] ] --> tt)
+let sg = Computad.bind sg 2 ("and/ff/ff" <: [ pt @@ con *@ [ pt ff; pt ff ] ] --> ff)
+let sg = Computad.bind sg 2 ("and/ff/tt" <: [ pt @@ con *@ [ pt ff; pt tt ] ] --> ff)
+let sg = Computad.bind sg 2 ("and/tt/ff" <: [ pt @@ con *@ [ pt tt; pt ff ] ] --> ff)
 let sg = Computad.bind sg 2 ("and/tt/tt" <: [ pt @@ con *@ [ pt tt; pt tt ] ] --> tt)
 let and_ff_ff = N.op "and-ff-ff"
 let and_ff_tt = N.op "and-ff-tt"
@@ -52,15 +52,15 @@ let sg = Computad.bind sg 1 ("map" <: [ [ pt nat] --> nat; pt list ] --> list)
 let nil = N.op "nil"
 let cons = N.op "cons"
 let map = N.op "map"
-let sg = Computad.bind sg 2 ("map/nil" <: [ pt @@ map *@ [ pt succ; pt nil ] ] --> nil)
-let sg = Computad.bind sg 2 ("map/cons" <: [ pt @@ map *@ [ pt succ; pt @@ cons *@ [ pt zero; pt nil ] ] ] --> cons *@ [ pt @@ succ *@ [ pt zero ]; pt nil ])
+(*let sg = Computad.bind sg 2 ("map/nil" <: [ pt @@ map *@ [ pt succ; pt nil ] ] --> nil)
+let sg = Computad.bind sg 2 ("map/cons" <: [ pt @@ map *@ [ pt succ; pt @@ cons *@ [ pt zero; pt nil ] ] ] --> cons *@ [ pt @@ succ *@ [ pt zero ]; pt nil ])*)
 
 let analyze node =
   let rose = Computad.Inf.Node.arity sg node in
   let () =
     fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
-    N.pp node
-    A.pp rose
+    (N.pp 2) node
+    (A.pp 0) rose
   ; pp_print_flush std_formatter () in
   rose
 
@@ -72,9 +72,9 @@ let () =
   let rose = analyze @@ not *@ [ pt ff ] in
   assert (Rose.equal rose @@ pt bool)
 
-let () =
+(*let () =
   let rose = analyze @@ not *@ [ pt tt ] in
-  assert (Rose.equal rose @@ pt bool)
+  assert (Rose.equal rose @@ pt bool)*)
 
 let () =
   let rose = analyze @@ con *@ [] in
@@ -88,13 +88,13 @@ let () =
   let rose = analyze @@ con *@ [ pt ff; pt ff ] in
   (assert (Rose.equal rose @@ pt bool))
 
-let () =
+(*let () =
   let rose = analyze @@ nil in
   (assert (Rose.equal rose @@ pt list))
 
 let () =
   let rose = analyze @@ cons in
-  (assert (Rose.equal rose @@ [ pt nat; pt list ] --> list))
+  (assert (Rose.equal rose @@ [ pt nat; pt list ] --> list))*)
 
 let () =
   let rose = analyze @@ map in
@@ -106,4 +106,12 @@ let () =
 
 let () =
   let rose = analyze @@ map *@ [ pt succ; pt nil ] in
+  (assert (Rose.equal rose @@ pt list))
+
+let () =
+  let rose = analyze @@ map *@ [] *@ [ pt succ ] *@ [ pt nil ] in
+  (assert (Rose.equal rose @@ pt list))
+
+let () =
+  let rose = analyze @@ map *@ [ pt succ ] *@ [ pt nil ] in
   (assert (Rose.equal rose @@ pt list))

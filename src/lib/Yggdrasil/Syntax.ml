@@ -1,10 +1,10 @@
 module Term = struct
-  module Dim = struct
+  module Dimension = struct
     type t = int
     [@@deriving eq, ord, show]
   end
 
-  module Op = struct
+  module Operator = struct
     type t = string
     [@@deriving eq, ord, show]
     let pp = Format.pp_print_string
@@ -13,17 +13,19 @@ module Term = struct
 
   module rec Node : sig
     type t =
-      | Op of Op.t
+      | Op of Operator.t
       | Rho of Rose.t
-    [@@deriving eq, ord, show]
+    [@@deriving eq, ord]
+    val pp : Dimension.t -> Format.formatter -> t -> unit
+    val show : Dimension.t -> t -> string
     val node : (Format.formatter -> Rose.t -> unit) -> (Format.formatter -> Node.t -> unit)
-    val op : Op.t -> t
+    val op : Operator.t -> t
     val rho : Node.t -> Bouquet.t -> t
   end = struct
     open Format
 
     type t =
-      | Op of Op.t
+      | Op of Operator.t
       | Rho of Rose.t
     [@@deriving eq, ord]
 
@@ -36,13 +38,13 @@ module Term = struct
         fprintf fmt "%a"
           (pp_rose) rho
 
-    let pp =
-      node Rose.pp
+    let pp dim =
+      node @@ Rose.pp dim
 
-    let show node =
+    let show dim node =
       let buffer = Buffer.create 0 in
       let fmt = formatter_of_buffer buffer in
-      pp fmt node
+      pp dim fmt node
     ; pp_print_flush fmt ()
     ; Buffer.contents buffer
 
@@ -55,29 +57,35 @@ module Term = struct
 
   and Rose : sig
     type t = Node.t Data.Rose.t
-    [@@deriving eq, ord, show]
+    [@@deriving eq, ord]
+    val pp : Dimension.t -> Format.formatter -> t -> unit
+    val show : Dimension.t -> t -> string
     val rho : Rose.t -> Bouquet.t -> Rose.t
-    val op : Op.t -> Bouquet.t -> Rose.t
+    val op : Operator.t -> Bouquet.t -> Rose.t
   end = struct
     open Format
     type t = Node.t Data.Rose.t
     [@@deriving eq, ord]
 
-    let rec pp fmt (Data.Rose.Fork (hd, sp)) =
+    let rec pp dim fmt (Data.Rose.Fork (hd, sp)) =
       let pp_sep fmt () = fprintf fmt "@ " in
       match sp with
       | [] ->
         fprintf fmt "%a"
-          (Node.pp) hd
+          (Node.pp dim) hd
+      | _ when dim < 2 ->
+        fprintf fmt "@[<2>(->@ %a@ %a)@]"
+          (Node.pp dim) hd
+          (pp_print_list ~pp_sep @@ pp dim) sp
       | _ ->
         fprintf fmt "@[<2>(%a@ %a)@]"
-          (Node.pp) hd
-          (pp_print_list ~pp_sep pp) sp
+          (Node.pp dim) hd
+          (pp_print_list ~pp_sep @@ pp dim) sp
 
-    let show rose =
+    let show dim rose =
       let buffer = Buffer.create 0 in
       let fmt = formatter_of_buffer buffer in
-      pp fmt rose
+      pp dim fmt rose
     ; pp_print_flush fmt ()
     ; Buffer.contents buffer
 
@@ -90,34 +98,34 @@ module Term = struct
 
   and Bouquet : sig
     type t = Node.t Data.Rose.Bouquet.t
-    [@@deriving eq, ord, show]
+    [@@deriving eq, ord]
   end = struct
     type t = Node.t Data.Rose.Bouquet.t
-    [@@deriving eq, ord, show]
+    [@@deriving eq, ord]
   end
 
   module Arity = struct
     open Format
 
-    let rec pp fmt (Data.Rose.Fork (hd, sp)) =
+    let rec pp dim fmt (Data.Rose.Fork (hd, sp)) =
       let pp_sep fmt () = fprintf fmt "@ " in
       match sp with
       | [] ->
         fprintf fmt "%a"
-          (Node.node pp) hd
+          (Node.node @@ pp dim) hd
       | tm :: [] ->
         fprintf fmt "@[<1>(->@ %a@ %a)@]"
-          (Rose.pp) tm
-          (Node.pp) hd
+          (Rose.pp dim) tm
+          (Node.pp dim) hd
       | _ ->
         fprintf fmt "@[<1>(->@ [%a]@ %a)@]"
-          (pp_print_list ~pp_sep Rose.pp) sp
-          (Node.pp) hd
+          (pp_print_list ~pp_sep @@ Rose.pp dim) sp
+          (Node.pp dim) hd
 
-    let show arity =
+    let show dim arity =
       let buffer = Buffer.create 0 in
       let fmt = formatter_of_buffer buffer in
-      pp fmt arity
+      pp dim fmt arity
     ; pp_print_flush fmt ()
     ; Buffer.contents buffer
 
@@ -127,9 +135,9 @@ module Term = struct
 
   module Cell = struct
     type t = {
-      name : Op.t;
+      name : Operator.t;
       arity : Rose.t;
-    } [@@deriving eq, ord, show]
+    } [@@deriving eq, ord]
   end
 
   let ( *@ ) head spine =
