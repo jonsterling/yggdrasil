@@ -107,12 +107,12 @@ module Term = struct
           (Node.node pp) hd
       | tm :: [] ->
         fprintf fmt "@[<1>(->@ %a@ %a)@]"
-          (pp) tm
-          (Node.node pp) hd
+          (Rose.pp) tm
+          (Node.pp) hd
       | _ ->
         fprintf fmt "@[<1>(->@ [%a]@ %a)@]"
-          (pp_print_list ~pp_sep pp) sp
-          (Node.node pp) hd
+          (pp_print_list ~pp_sep Rose.pp) sp
+          (Node.pp) hd
 
     let show arity =
       let buffer = Buffer.create 0 in
