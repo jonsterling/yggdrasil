@@ -1,37 +1,43 @@
-open Computad
+open Yggdrasil
 open Format
-open Syntax.Arity
-open Syntax.Cell
-open Syntax.Term
+open Syntax
+
+module N = Term.Node
+module R = Term.Rose
+
+open Term
+open Term.Arity
+
+module Computad = Typing.Make(Computad.Std)
 
 let sg =
-  init
+  Computad.empty
 let star =
-  op "type"
+  N.op "type"
 
 let sg =
-  bind sg 0 ("bool" <! star)
+  Computad.bind sg 0 ("bool" <! star)
 let bool =
-  op "bool"
+  N.op "bool"
 
 let sg =
-  bind sg 1 ("ff" <! bool)
+  Computad.bind sg 1 ("ff" <! bool)
 let sg =
-  bind sg 1 ("tt" <! bool)
+  Computad.bind sg 1 ("tt" <! bool)
 let sg =
-  bind sg 1 ("not" <: [ pt bool ] --> bool)
+  Computad.bind sg 1 ("not" <: [ pt bool ] --> bool)
 let sg =
-  bind sg 1 ("con" <: [ pt bool; pt bool ] --> bool)
+  Computad.bind sg 1 ("con" <: [ pt bool; pt bool ] --> bool)
 let ff =
-  op "ff"
+  N.op "ff"
 let tt =
-  op "tt"
+  N.op "tt"
 let not =
-  op "not"
+  N.op "not"
 let con =
-  op "con"
+  N.op "con"
 
-let sg =
+(*let sg =
   bind sg 2 ("not/ff" <: [ pt @@ "not" *@ [ ff ] ] --> tt)
 let sg =
   bind sg 2 ("not/tt" <: [ pt @@ "not" *@ [ tt ] ] --> ff)
@@ -93,25 +99,26 @@ let sg =
   bind sg 2 ("map/nil" <: [ pt @@ "map" *@ [ succ; nil ] ] --> nil)
 let sg =
   bind sg 2 ("map/cons"  <: [ pt @@ "map" *@ [ succ; "cons" *@ [ zero; nil ] ] ] --> "cons" *@ [ "succ" *@ [ zero ]; "map" *@ [ succ; nil ] ])*)
+*)
 
-let analyze term =
-  let ar = Checker.term_infer_infer sg term in
-  let tm = Computad.normTm sg term in
+let analyze node =
+  let rose = Computad.Inf.Node.arity sg node in
   let () =
-    fprintf std_formatter "@.@\n@[<hv>term:@ %a@\ntype:@ %a@\nnorm:@ %a@]"
-    Syntax.Term.pp term
-    Syntax.Arity.pp ar
-    Syntax.Term.pp tm in
-  (ar, tm)
+    fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
+    N.pp node
+    R.pp rose
+  ; pp_print_flush std_formatter () in
+  rose
 
 let () =
   fprintf std_formatter "%a"
     Computad.pp sg
 
 let () =
-  let (_ar, tm) = analyze @@ "not" *@ [ ff ] in
-  assert (tm = tt)
+  let rose = analyze @@ not *@ [ pt ff ] in
+  assert (Rose.equal rose @@ pt bool)
 
+(*
 let () =
   let (_ar, tm) = analyze @@ "not" *@ [ tt ] in
   assert (tm = ff)
@@ -130,7 +137,7 @@ let () =
 
 let () =
   let (_ar, tm) = analyze @@ "con" *@ [ "con" *@ [ tt; tt ]; "not" *@ [ ff ] ] in
-  assert (tm = tt)
+  assert (tm = tt)*)
 
 (*let () =
   let res = normalize @@ "map" *@ [ succ; nil ] in
