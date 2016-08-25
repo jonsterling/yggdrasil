@@ -104,6 +104,11 @@ let () =
   ()
 
 let () =
-  let f = Term.Node.Lm ([("x", pt nat); ("y", pt bool)], succ *@ [ pt @@ Term.Node.Var "x" ]) in
+  let f = Term.Node.Lm ([("f", [ pt nat ] --> nat); ("x", pt nat)], Term.Node.Op "succ" *@ [ pt @@ Term.Node.Var "f" *@ [ pt @@ Term.Node.Var "x" ] ]) in
+  let _ = analyze @@ f in
+  ()
+
+let () =
+  let f = Term.Node.Lm ([("f", [ pt nat ] --> nat)], Term.Node.Lm ([("x", pt nat)], Term.Node.Op "succ" *@ [ pt @@ Term.Node.Var "f" *@ [ pt @@ Term.Node.Var "x" ] ])) in
   let _ = analyze @@ f in
   ()
