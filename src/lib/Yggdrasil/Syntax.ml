@@ -27,7 +27,7 @@ module Term = struct
     let pp fmt (x, ar) =
       fprintf fmt "(∂@ %a@ %a)"
         (pp_print_string) x
-        (Rose.pp 2) ar
+        (Rose.pp 0) ar
 
     let show bind =
       let buffer = Buffer.create 0 in
