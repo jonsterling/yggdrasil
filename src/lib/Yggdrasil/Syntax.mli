@@ -1,4 +1,6 @@
 module Term : sig
+  open Format
+
   module Dimension : sig
     type t = int
     [@@deriving eq, ord, show]
@@ -9,24 +11,36 @@ module Term : sig
     [@@deriving eq, ord, show]
   end
 
-  module rec Node : sig
+  module Var : sig
+    type t = string
+    [@@deriving eq, ord, show]
+  end
+
+  module rec Bind : sig
+    type t = Var.t * Rose.t
+    [@@deriving eq, ord, show]
+  end
+
+  and Node : sig
     type t =
+      | Ap of Rose.t
+      | Lm of Bind.t list * t
       | Op of Operator.t
-      | Rho of Rose.t
+      | Var of Var.t
     [@@deriving eq, ord]
-    val pp : Dimension.t -> Format.formatter -> t -> unit
+    val pp : Dimension.t -> formatter -> t -> unit
     val show : Dimension.t -> t -> string
-    val node : (Format.formatter -> Rose.t -> unit) -> (Format.formatter -> Node.t -> unit)
+    val node : (formatter -> Rose.t -> unit) -> (formatter -> Node.t -> unit)
+    val ap : Node.t -> Bouquet.t -> t
     val op : Operator.t -> t
-    val rho : Node.t -> Bouquet.t -> t
   end
 
   and Rose : sig
     type t = Node.t Data.Rose.t
     [@@deriving eq, ord]
-    val pp : Dimension.t -> Format.formatter -> t -> unit
+    val pp : Dimension.t -> formatter -> t -> unit
     val show : Dimension.t -> t -> string
-    val rho : Rose.t -> Bouquet.t -> Rose.t
+    val ap : Rose.t -> Bouquet.t -> Rose.t
     val op : Operator.t -> Bouquet.t -> Rose.t
   end
 
@@ -36,7 +50,7 @@ module Term : sig
   end
 
   module Arity : sig
-    val pp : Dimension.t -> Format.formatter -> Rose.t -> unit
+    val pp : Dimension.t -> formatter -> Rose.t -> unit
     val pt : Node.t -> Rose.t
     val show : Dimension.t -> Rose.t -> string
   end

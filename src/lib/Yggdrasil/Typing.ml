@@ -1,20 +1,38 @@
 module Make (Sigma : Computad.S) = struct
+  open Data.Rose
   open Syntax
   include Sigma
+
+  module Ctx : sig
+    type t
+    [@@deriving eq, ord]
+    val init : t
+    val push : t -> Term.Bind.t list -> t
+    val arity : t -> Term.Var.t -> Term.Rose.t
+  end = struct
+    type t = Term.Bind.t list
+    [@@deriving eq, ord]
+    let init = []
+    let push = List.append
+    let arity gamma x =
+      let pred (y, _) = Term.Var.equal x y in
+      let (_, ar) = List.find pred gamma in
+      ar
+  end
 
   module Sig = struct
     module Chk = struct
       module type Node = sig
-        val arity : Sigma.t -> Term.Node.t -> Term.Rose.t -> unit
+        val arity : Sigma.t -> Ctx.t -> Term.Node.t -> Term.Rose.t -> unit
       end
     end
     module Inf = struct
       module type Node = sig
-        val arity : Sigma.t -> Term.Node.t -> Term.Rose.t
-        val subtract : Sigma.t -> Term.Bouquet.t -> Term.Bouquet.t -> Term.Bouquet.t
+        val arity : Sigma.t -> Ctx.t -> Term.Node.t -> Term.Rose.t
+        val subtract : Sigma.t -> Ctx.t -> Term.Bouquet.t -> Term.Bouquet.t -> Term.Bouquet.t
       end
       module type Rose = sig
-        val arity : Sigma.t -> Term.Rose.t -> Term.Rose.t
+        val arity : Sigma.t -> Ctx.t -> Term.Rose.t -> Term.Rose.t
       end
     end
     module type Chk = sig
@@ -28,33 +46,41 @@ module Make (Sigma : Computad.S) = struct
 
   module rec Inf : Sig.Inf = struct
     module rec Node : Sig.Inf.Node = struct
-      let rec arity sigma tm =
+      open Term.Node
+      let rec arity sigma gamma tm =
         match [@warning "-4"] tm with
-        | Term.Node.Op op ->
+        | Ap rho ->
+          Rose.arity sigma gamma rho
+        | Op op ->
           Sigma.arity sigma op
-        | Term.Node.Rho rho ->
-          Rose.arity sigma rho
-      and subtract sigma doms sp =
+        | Lm (xs, e) ->
+          let dom0 = List.map snd xs in
+          let Fork (cod, dom1) = arity sigma (Ctx.push gamma xs) e in
+          Fork (cod, dom0 @ dom1)
+        | Var x ->
+          Ctx.arity gamma x
+
+      and subtract sigma gamma doms sp =
         match (doms, sp) with
         | doms, [] ->
           doms
         | (dom :: doms), (tm :: sp) ->
-          let () = Chk.Node.arity sigma (Term.Node.Rho tm) dom in
-          subtract sigma doms sp
+          let () = Chk.Node.arity sigma gamma (Ap tm) dom in
+          subtract sigma gamma doms sp
         | _ ->
           assert false
     end
     and Rose : Sig.Inf.Rose = struct
-      let arity sigma (Data.Rose.Fork (hd, sp)) =
-        let (Data.Rose.Fork (cod, doms)) = Node.arity sigma hd in
-        let doms' = Node.subtract sigma doms sp in
-        Data.Rose.Fork (cod, doms')
+      let arity sigma gamma (Fork (hd, sp)) =
+        let Fork (cod, dom0) = Node.arity sigma gamma hd in
+        let dom1 = Node.subtract sigma gamma dom0 sp in
+        Fork (cod, dom1)
     end
   end
   and Chk : Sig.Chk = struct
     module Node = struct
-      let arity sigma tm ar =
-        assert (Term.Rose.equal (Inf.Node.arity sigma tm) ar)
+      let arity sigma gamma tm ar =
+        assert (Term.Rose.equal (Inf.Node.arity sigma gamma tm) ar)
     end
   end
 end

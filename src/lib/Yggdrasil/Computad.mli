@@ -7,4 +7,4 @@ module type S = sig
   val arity : t -> Operator.t -> Rose.t
 end
 
-module Std : S
+include S

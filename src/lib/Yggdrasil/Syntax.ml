@@ -1,42 +1,83 @@
 module Term = struct
+  open Data.Rose
+  open Format
+
   module Dimension = struct
     type t = int
     [@@deriving eq, ord, show]
   end
 
   module Operator = struct
-    type t = string
+    type t = string [@show.printer pp_print_string]
     [@@deriving eq, ord, show]
-    let pp = Format.pp_print_string
-    let show op = op
   end
 
-  module rec Node : sig
-    type t =
-      | Op of Operator.t
-      | Rho of Rose.t
-    [@@deriving eq, ord]
-    val pp : Dimension.t -> Format.formatter -> t -> unit
-    val show : Dimension.t -> t -> string
-    val node : (Format.formatter -> Rose.t -> unit) -> (Format.formatter -> Node.t -> unit)
-    val op : Operator.t -> t
-    val rho : Node.t -> Bouquet.t -> t
+  module Var = struct
+    type t = string [@show.printer pp_print_string]
+    [@@deriving eq, ord, show]
+  end
+
+  module rec Bind : sig
+    type t = Var.t * Rose.t
+    [@@deriving eq, ord, show]
   end = struct
-    open Format
-
-    type t =
-      | Op of Operator.t
-      | Rho of Rose.t
+    type t = Var.t * Rose.t
     [@@deriving eq, ord]
 
-    let node pp_rose fmt tm =
+    let pp fmt (x, ar) =
+      fprintf fmt "(∂@ %a@ %a)"
+        (pp_print_string) x
+        (Rose.pp 2) ar
+
+    let show bind =
+      let buffer = Buffer.create 0 in
+      let fmt = formatter_of_buffer buffer in
+      pp fmt bind
+    ; pp_print_flush fmt ()
+    ; Buffer.contents buffer
+  end
+
+  and Node : sig
+    type t =
+      | Ap of Rose.t
+      | Lm of Bind.t list * t
+      | Op of Operator.t
+      | Var of Var.t
+    [@@deriving eq, ord]
+    val pp : Dimension.t -> formatter -> t -> unit
+    val show : Dimension.t -> t -> string
+    val node : (formatter -> Rose.t -> unit) -> (formatter -> Node.t -> unit)
+    val ap : Node.t -> Bouquet.t -> t
+    val op : Operator.t -> t
+  end = struct
+
+    type t =
+      | Ap of Rose.t
+      | Lm of Bind.t list * t
+      | Op of Operator.t
+      | Var of Var.t
+    [@@deriving eq, ord]
+
+    let rec node pp_rose fmt tm =
       match tm with
-      | Op op ->
-        fprintf fmt "%a"
-          (pp_print_string) op
-      | Rho rho ->
+      | Ap rho ->
         fprintf fmt "%a"
           (pp_rose) rho
+      | Lm ([x], e) ->
+        fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
+          (Bind.pp) x
+          (node pp_rose) e
+      | Lm (xs, e) ->
+        let pp_sep fmt () = fprintf fmt "@ " in
+        fprintf fmt "@[<2>(λ@ [%a]@ @[<2>%a@])@]"
+          (pp_print_list ~pp_sep Bind.pp) xs
+          (node pp_rose) e
+      | Op theta ->
+        fprintf fmt "%a"
+          (Operator.pp) theta
+      | Var x ->
+        fprintf fmt "%a"
+          (Var.pp) x
 
     let pp dim =
       node @@ Rose.pp dim
@@ -48,22 +89,21 @@ module Term = struct
     ; pp_print_flush fmt ()
     ; Buffer.contents buffer
 
+    let ap head spine =
+      Ap (Fork (head, spine))
+
     let op head =
       Op head
-
-    let rho head spine =
-      Rho (Data.Rose.Fork (head, spine))
   end
 
   and Rose : sig
     type t = Node.t Data.Rose.t
     [@@deriving eq, ord]
-    val pp : Dimension.t -> Format.formatter -> t -> unit
+    val pp : Dimension.t -> formatter -> t -> unit
     val show : Dimension.t -> t -> string
-    val rho : Rose.t -> Bouquet.t -> Rose.t
+    val ap : Rose.t -> Bouquet.t -> Rose.t
     val op : Operator.t -> Bouquet.t -> Rose.t
   end = struct
-    open Format
     type t = Node.t Data.Rose.t
     [@@deriving eq, ord]
 
@@ -89,11 +129,11 @@ module Term = struct
     ; pp_print_flush fmt ()
     ; Buffer.contents buffer
 
-    let rho head spine =
-      Data.Rose.Fork (Node.Rho head, spine)
+    let ap head spine =
+      Fork (Node.Ap head, spine)
 
     let op head spine =
-      Data.Rose.Fork (Node.Op head, spine)
+      Fork (Node.Op head, spine)
   end
 
   and Bouquet : sig
@@ -105,8 +145,6 @@ module Term = struct
   end
 
   module Arity = struct
-    open Format
-
     let rec pp dim fmt (Data.Rose.Fork (hd, sp)) =
       let pp_sep fmt () = fprintf fmt "@ " in
       match sp with
@@ -141,10 +179,10 @@ module Term = struct
   end
 
   let ( *@ ) head spine =
-    Node.Rho (Data.Rose.Fork (head, spine))
+    Node.Ap (Fork (head, spine))
 
   let ( --> ) dom cod =
-    Data.Rose.Fork (cod, dom)
+    Fork (cod, dom)
 
   let ( <: ) name arity =
     { Cell.name; arity }
