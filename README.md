@@ -19,14 +19,10 @@ This will compile the project and place binaries in the local `bin` directory.
 
 #### Running
 
-Run the command line interface:
+Run the tests:
 
 ```sh
-$ bin/yggdrasil help
+$ make test
 ```
 
-Run an example:
-
-```sh
-$ bin/yggdrasil parse examples/ex00.ygg
-```
+This does type checking and other analysis on several examples and pretty prints the results.
