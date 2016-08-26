@@ -48,7 +48,7 @@ module Make (Sigma : Computad.S) = struct
     module rec Node : Sig.Inf.Node = struct
       open Term.Node
       let rec arity sigma gamma tm =
-        match [@warning "-4"] tm with
+        match tm with
         | Ap rho ->
           Rose.arity sigma gamma rho
         | Op op ->
