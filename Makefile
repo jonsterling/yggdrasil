@@ -26,6 +26,7 @@ tools: bin/yggdrasil
 
 install:
 	@opam list -i cats > /dev/null || opam pin add cats git://github.com/freebroccolo/ocaml-cats --yes
+	@opam list -i optics > /dev/null || opam pin add optics git://github.com/freebroccolo/ocaml-optics --yes
 	@opam list -i yggdrasil > /dev/null || opam pin add . --yes
 	@make all
 	@echo
