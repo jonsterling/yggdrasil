@@ -9,6 +9,7 @@ in Sys.chdir root;;
 #require "cats";;
 #require "containers";;
 #require "containers.data";;
+#require "menhirLib";;
 #require "ppx_deriving.std";;
 #directory "_build/src/lib";;
 #load "yggdrasil.cma";;

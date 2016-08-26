@@ -3,7 +3,7 @@ OPAM=opam
 
 .PHONY: all clean examples install lib links tests tools top
 
-all: lib links tools top
+all: lib links tools
 
 bin:
 	@mkdir -p bin
