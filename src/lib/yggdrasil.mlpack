@@ -1,4 +1,8 @@
 Yggdrasil/Computad
 Yggdrasil/Data
+Yggdrasil/Lexer
+Yggdrasil/Parser
+Yggdrasil/ParserSpec
 Yggdrasil/Syntax
+Yggdrasil/Token
 Yggdrasil/Typing

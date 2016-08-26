@@ -1,6 +1,6 @@
 (computad booleans
   (sign types
-    (cell bool star))
+    (cell bool type))
   (sign terms
     (cell ff bool)
     (cell tt bool)
@@ -12,10 +12,16 @@
     (cell and/ff/ff (-> (and ff ff) ff))
     (cell and/ff/tt (-> (and ff tt) ff))
     (cell and/tt/ff (-> (and tt ff) ff))
-    (cell and/tt/tt (-> (and tt tt) tt)))
+    (cell and/tt/tt (-> (and tt tt) tt))
+    (cell and/eta (lam [(cell x bool) (cell y bool)] (and x y))))
+  (@@analyze bool)
   (@@analyze (not ff))
   (@@analyze (not tt))
   (@@analyze (and ff ff))
   (@@analyze (and (and tt tt) ff))
   (@@analyze (and (and tt tt) tt))
-  (@@analyze (and (and tt tt) (not ff))))
+  (@@analyze (and (and tt tt) (not ff)))
+  (@@analyze and/eta)
+  (@@analyze (lam (cell x bool) (not x)))
+  (@@analyze (lam [(cell x bool) (cell y bool)] (and x y)))
+  (@@analyze (lam (cell x bool) (lam (cell y bool) (and x y)))))

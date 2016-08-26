@@ -3,7 +3,7 @@ module T = Syntax.Term
 module Ctx : sig
   type t
   [@@deriving eq, ord]
-  val init : t
+  val empty : t
   val push : t -> T.Bind.t list -> t
   val arity : t -> T.Variable.t -> T.Rose.t
 end

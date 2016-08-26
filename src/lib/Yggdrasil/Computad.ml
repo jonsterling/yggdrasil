@@ -25,21 +25,20 @@ end = struct
   open Syntax.Term
 
   let print fmt trie =
+    let dim = 2 in
     let list =
       List.fast_sort
         (fun (_pt0, (_ar0, op0)) (_pt1, (_ar1, op1)) -> Operator.compare op0 op1)
         (Trie.to_list trie) in
     let assoc fmt = function
-      | ([ tm ], (cod, op)) ->
-        fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
-          (Operator.pp) op
-          (Rose.pp 2) tm
-          (Rose.pp 2) cod
-      | (dom, (cod, op)) ->
-        fprintf fmt "@[<2>%a@ :@ %a@,@ @[->@ %a@]@]"
-          (Operator.pp) op
-          (CCFormat.list @@ Rose.pp 2) dom
-          (Rose.pp 2) cod in
+      | (dom :: [], (cod, _op)) ->
+        fprintf fmt "@[%a@,@ @[=>@ %a@]@]"
+          (Rose.pp dim) dom
+          (Rose.pp dim) cod
+      | (dom, (cod, _op)) ->
+        fprintf fmt "@[%a@,@ @[=>@ %a@]@]"
+          (CCFormat.list @@ Rose.pp dim) dom
+          (Rose.pp dim) cod in
     fprintf fmt "@[<v>%a@]"
       (CCFormat.list ~start:"" ~sep:"" ~stop:"" assoc) list
   type t = (Rose.t * string) Trie.t [@show.printer print]
@@ -66,7 +65,7 @@ module Cells = struct
   let pp computad fmt map =
     let assoc fmt (op, ar) =
       let dm = Map.find op computad.dimensions in
-      fprintf fmt "@[<2>[%a]@ (∂@ %a@ %a)@]"
+      fprintf fmt "@[<6>[%a]@ (∂@ %a@ %a)@]"
         (Dimension.pp) (Map.find op computad.dimensions)
         (Operator.pp) op
         (Arity.pp dm) ar in
@@ -117,7 +116,7 @@ end
 module Rules = struct
   let pp _computad fmt map =
     let assoc fmt (op, rules) =
-      fprintf fmt "@[<v 2>%a@[@ @][@,%a@,]@]"
+      fprintf fmt "@[<v 2>%a@[@ ≜@]@,%a@]"
         (Operator.pp) op
         (Patterns.pp) rules in
     let list = List.fast_sort (fun (lhs, _) (rhs, _) -> String.compare lhs rhs) @@ Map.to_list map in
@@ -147,16 +146,17 @@ let empty = {
 }
 
 let bind sigma dim { Cell.name; arity } =
+  let open Data.Rose in
   let cells = Map.add name arity sigma.cells in
   let dimensions = Map.add name dim sigma.dimensions in
   let rules =
     match [@warning "-4"] arity with
-    | Data.Rose.Fork (_, [ Data.Rose.Fork (Node.Op theta, spine) ]) when dim > 1 ->
+    | Fork (res, [ Fork (Node.Op theta, args) ]) when dim > 1 ->
       let update = function
         | None ->
-          Some (Trie.add spine (arity, name) Trie.empty)
+          Some (Trie.add args (Arity.pt res, name) Trie.empty)
         | Some pre ->
-          Some (Trie.add spine (arity, name) pre) in
+          Some (Trie.add args (Arity.pt res, name) pre) in
       Map.update theta update sigma.rules
     | _ ->
       sigma.rules in

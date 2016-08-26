@@ -9,8 +9,8 @@ bin:
 	@mkdir -p bin
 
 bin/yggdrasil: bin
-	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib src/tools/yggdrasil.native
-	@ln -sf ${PWD}/_build/src/tools/yggdrasil.native bin/yggdrasil
+	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib src/tools/yggdrasil/Main.native
+	@ln -sf ${PWD}/_build/src/tools/yggdrasil/Main.native bin/yggdrasil
 
 clean:
 	@${OCAMLBUILD} -clean

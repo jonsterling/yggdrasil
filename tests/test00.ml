@@ -53,7 +53,7 @@ let cons = N.op "cons"
 let map = N.op "map"
 
 let analyze node =
-  let rose = Inf.Node.arity sg Ctx.init node in
+  let rose = Inf.Node.arity sg Ctx.empty node in
   let () =
     fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
     (N.pp 2) node

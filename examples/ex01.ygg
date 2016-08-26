@@ -1,7 +1,7 @@
 (computad lists
   (sign types
-    (cell nat star)
-    (cell list star))
+    (cell nat type)
+    (cell list type))
   (sign terms
     (cell zero nat)
     (cell succ (-> nat nat))
@@ -12,4 +12,5 @@
   (sign rules
     (cell map/nil (-> (map succ nil) nil))
     (cell map/cons (-> (map succ (cons zero nil)) (cons (succ zero) (map succ nil)))))
-  (@@normalize (map succ (cons zero nil))))
+  (@@analyze (map (lam (cell x nat) (succ x)) (cons zero nil)))
+  (@@analyze (map succ (cons zero nil))))
