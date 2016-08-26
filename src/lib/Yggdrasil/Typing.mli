@@ -1,27 +1,24 @@
-module Make (Sigma : Computad.S) : sig
-  open Syntax
-  include Computad.S with type t = Sigma.t
+module T = Syntax.Term
 
-  module Ctx : sig
-    type t
-    [@@deriving eq, ord]
-    val init : t
-    val push : t -> Term.Bind.t list -> t
-    val arity : t -> Term.Var.t -> Term.Rose.t
-  end
+module Ctx : sig
+  type t
+  [@@deriving eq, ord]
+  val init : t
+  val push : t -> T.Bind.t list -> t
+  val arity : t -> T.Variable.t -> T.Rose.t
+end
 
-  module Inf : sig
-    module Node : sig
-      val arity : Sigma.t -> Ctx.t -> Term.Node.t -> Term.Rose.t
-      val subtract : Sigma.t -> Ctx.t -> Term.Bouquet.t -> Term.Bouquet.t -> Term.Bouquet.t
-    end
-    module Rose : sig
-      val arity : Sigma.t -> Ctx.t -> Term.Rose.t -> Term.Rose.t
-    end
+module Inf : sig
+  module Node : sig
+    val arity : Computad.t -> Ctx.t -> T.Node.t -> T.Rose.t
+    val subtract : Computad.t -> Ctx.t -> T.Bouquet.t -> T.Bouquet.t -> T.Bouquet.t
   end
-  module Chk : sig
-    module Node : sig
-      val arity : Sigma.t -> Ctx.t -> Term.Node.t -> Term.Rose.t -> unit
-    end
+  module Rose : sig
+    val arity : Computad.t -> Ctx.t -> T.Rose.t -> T.Rose.t
+  end
+end
+module Chk : sig
+  module Node : sig
+    val arity : Computad.t -> Ctx.t -> T.Node.t -> T.Rose.t -> unit
   end
 end

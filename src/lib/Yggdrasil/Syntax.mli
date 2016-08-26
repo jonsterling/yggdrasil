@@ -11,14 +11,19 @@ module Term : sig
     [@@deriving eq, ord, show]
   end
 
-  module Var : sig
+  module Variable : sig
     type t = string
     [@@deriving eq, ord, show]
   end
 
   module rec Bind : sig
-    type t = Var.t * Rose.t
+    type t = Variable.t * Rose.t
     [@@deriving eq, ord, show]
+  end
+
+  and Bouquet : sig
+    type t = Node.t Data.Rose.Bouquet.t
+    [@@deriving eq, ord]
   end
 
   and Node : sig
@@ -26,7 +31,7 @@ module Term : sig
       | Ap of Rose.t
       | Lm of Bind.t list * t
       | Op of Operator.t
-      | Var of Var.t
+      | Var of Variable.t
     [@@deriving eq, ord]
     val pp : Dimension.t -> formatter -> t -> unit
     val show : Dimension.t -> t -> string
@@ -42,11 +47,6 @@ module Term : sig
     val show : Dimension.t -> t -> string
     val ap : Rose.t -> Bouquet.t -> Rose.t
     val op : Operator.t -> Bouquet.t -> Rose.t
-  end
-
-  and Bouquet : sig
-    type t = Node.t Data.Rose.Bouquet.t
-    [@@deriving eq, ord]
   end
 
   module Arity : sig
@@ -66,4 +66,8 @@ module Term : sig
   val ( --> ) : Bouquet.t -> Node.t -> Rose.t
   val ( <: ) : Operator.t -> Rose.t -> Cell.t
   val ( <! ) : Operator.t -> Node.t -> Cell.t
+
+  module Builtin : sig
+    val star : Node.t
+  end
 end

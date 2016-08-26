@@ -12,16 +12,16 @@ module Term = struct
     [@@deriving eq, ord, show]
   end
 
-  module Var = struct
+  module Variable = struct
     type t = string [@show.printer pp_print_string]
     [@@deriving eq, ord, show]
   end
 
   module rec Bind : sig
-    type t = Var.t * Rose.t
+    type t = Variable.t * Rose.t
     [@@deriving eq, ord, show]
   end = struct
-    type t = Var.t * Rose.t
+    type t = Variable.t * Rose.t
     [@@deriving eq, ord]
 
     let pp fmt (x, ar) =
@@ -37,12 +37,20 @@ module Term = struct
     ; Buffer.contents buffer
   end
 
+  and Bouquet : sig
+    type t = Node.t Data.Rose.Bouquet.t
+    [@@deriving eq, ord]
+  end = struct
+    type t = Node.t Data.Rose.Bouquet.t
+    [@@deriving eq, ord]
+  end
+
   and Node : sig
     type t =
       | Ap of Rose.t
       | Lm of Bind.t list * t
       | Op of Operator.t
-      | Var of Var.t
+      | Var of Variable.t
     [@@deriving eq, ord]
     val pp : Dimension.t -> formatter -> t -> unit
     val show : Dimension.t -> t -> string
@@ -55,7 +63,7 @@ module Term = struct
       | Ap of Rose.t
       | Lm of Bind.t list * t
       | Op of Operator.t
-      | Var of Var.t
+      | Var of Variable.t
     [@@deriving eq, ord]
 
     let rec node pp_rose fmt tm =
@@ -63,7 +71,7 @@ module Term = struct
       | Ap rho ->
         fprintf fmt "%a"
           (pp_rose) rho
-      | Lm ([x], e) ->
+      | Lm (x :: [], e) ->
         fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
           (Bind.pp) x
           (node pp_rose) e
@@ -77,7 +85,7 @@ module Term = struct
           (Operator.pp) theta
       | Var x ->
         fprintf fmt "%a"
-          (Var.pp) x
+          (Variable.pp) x
 
     let pp dim =
       node @@ Rose.pp dim
@@ -136,14 +144,6 @@ module Term = struct
       Fork (Node.Op head, spine)
   end
 
-  and Bouquet : sig
-    type t = Node.t Data.Rose.Bouquet.t
-    [@@deriving eq, ord]
-  end = struct
-    type t = Node.t Data.Rose.Bouquet.t
-    [@@deriving eq, ord]
-  end
-
   module Arity = struct
     let rec pp dim fmt (Data.Rose.Fork (hd, sp)) =
       let pp_sep fmt () = fprintf fmt "@ " in
@@ -189,4 +189,8 @@ module Term = struct
 
   let ( <! ) name cod =
     { Cell.name; arity = Arity.pt cod }
+
+  module Builtin = struct
+    let star = Node.op "type"
+  end
 end

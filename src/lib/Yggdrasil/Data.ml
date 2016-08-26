@@ -1,5 +1,6 @@
 module Rose = struct
   open Cats
+  open Format
 
   module Def = struct
     include (Def.Cofree.Make (Def.Functor.List))
@@ -31,8 +32,7 @@ module Rose = struct
   include Ext.Traversable.Make(Def)
 
   let rec equal eq_elem (Fork (x, xs)) (Fork (y, ys)) =
-    eq_elem x y
-    && equal_bouquet eq_elem xs ys
+    eq_elem x y && equal_bouquet eq_elem xs ys
   and equal_bouquet eq_elem xs ys =
     CCList.equal (equal eq_elem) xs ys
 
@@ -44,25 +44,25 @@ module Rose = struct
     CCList.compare (compare ord_elem) xs ys
 
   let rec pp pp_elem fmt (Fork (x, xs)) =
-    Format.fprintf fmt "@[<v>Fork@,(@[<h>@ %a@]@,,@[<h>@ %a@ @])@]"
+    fprintf fmt "@[<v>Fork@,(@[<h>@ %a@]@,,@[<h>@ %a@ @])@]"
       (pp_elem) x
       (pp_bouquet pp_elem) xs
   and pp_bouquet pp_elem fmt xs =
-    let pp_sep fmt () = Format.fprintf fmt "@,,@[@ @]" in
-    Format.fprintf fmt "@[<v 2>[@["
+    let pp_sep fmt () = fprintf fmt "@,,@[@ @]" in
+    fprintf fmt "@[<v 2>[@["
   ; if not (CCList.is_empty xs) then
-      Format.fprintf fmt "@ "
-  ; Format.fprintf fmt "@]%a@["
-      (Format.pp_print_list ~pp_sep @@ pp pp_elem) xs
+      fprintf fmt "@ "
+  ; fprintf fmt "@]%a@["
+      (pp_print_list ~pp_sep @@ pp pp_elem) xs
   ; if not (CCList.is_empty xs) then
-      Format.fprintf fmt "@ "
-  ; Format.fprintf fmt "@]]@]"
+      fprintf fmt "@ "
+  ; fprintf fmt "@]]@]"
 
   let show_poly pp_t pp_elem rose =
     let buffer = Buffer.create 0 in
-    let fmt = Format.formatter_of_buffer buffer in
+    let fmt = formatter_of_buffer buffer in
     pp_t pp_elem fmt rose;
-    Format.pp_print_flush fmt ();
+    pp_print_flush fmt ();
     Buffer.contents buffer
 
   let show pp_elem = show_poly pp pp_elem
