@@ -1,28 +1,36 @@
+BUILD_DIR=${PWD}/_build
+MENHIR_FLAGS=-use-menhir -menhir 'menhir --external-tokens Token --table'
+MKDIR=mkdir -p
 OCAMLBUILD=ocamlbuild
+OCAMLBUILD_JOBS=-j 0
+OCAMLBUILD_FLAGS=${OCAMLBUILD_JOBS} -use-ocamlfind -no-links ${MENHIR_FLAGS}
 OPAM=opam
+REMOVE=rm -rf
+SYMLINK=ln -sf
+YGGDRASIL=bin/yggdrasil
 
 .PHONY: all clean examples install lib links tests tools top
 
 all: lib links tools
 
 bin:
-	@mkdir -p bin
+	@${MKDIR} bin
 
 bin/yggdrasil: bin
-	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib src/tools/yggdrasil/Main.native
-	@ln -sf ${PWD}/_build/src/tools/yggdrasil/Main.native bin/yggdrasil
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib src/tools/yggdrasil/Main.native
+	@${SYMLINK} ${BUILD_DIR}/src/tools/yggdrasil/Main.native bin/yggdrasil
 
 clean:
 	@${OCAMLBUILD} -clean
-	@rm -rf bin
+	@${REMOVE} bin
 
 distclean: clean
 	@${OPAM} pin remove cats yggdrasil
 
 examples: tools
 	@for e in $$(ls examples); do\
-		printf "\n*** %s ***\n\n" $$e;\
-		bin/yggdrasil parse examples/$$e;\
+		printf "\n*** %s ***\n" $$e;\
+		${YGGDRASIL} parse examples/$$e;\
 	done
 
 tools: bin/yggdrasil
@@ -38,14 +46,14 @@ install:
 	@echo "* run './bin/yggdrasil help' for details"
 
 lib:
-	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/lib/yggdrasil.cmxa
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa
 
 links: bin/yggdrasil
 
 test: lib
-	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' -I src/lib tests/test00.native
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib tests/test00.native
 	@_build/tests/test00.native
 
 top:
-	@${OCAMLBUILD} -j 0 -use-ocamlfind -no-links -use-menhir -menhir 'menhir --external-tokens Token --table' src/lib/yggdrasil.cma
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
 	@utop
