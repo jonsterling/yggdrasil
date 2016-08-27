@@ -1,4 +1,3 @@
-open Yggdrasil
 open Format
 open Syntax
 open Typing
