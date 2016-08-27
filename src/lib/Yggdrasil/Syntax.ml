@@ -150,7 +150,7 @@ module Term = struct
       match sp with
       | [] ->
         fprintf fmt "%a"
-          (Node.node @@ pp dim) hd
+          (Node.node @@ Rose.pp dim) hd
       | tm :: [] ->
         fprintf fmt "@[<1>(->@ %a@ %a)@]"
           (Rose.pp dim) tm
