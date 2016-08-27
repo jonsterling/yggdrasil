@@ -1,5 +1,4 @@
 open Cmdliner
-open Yggdrasil
 
 let act_parse file_name =
   let open Format in

@@ -17,7 +17,7 @@ bin:
 	@${MKDIR} bin
 
 bin/yggdrasil: bin
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib src/tools/yggdrasil/Main.native
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil src/tools/yggdrasil/Main.native
 	@${SYMLINK} ${BUILD_DIR}/src/tools/yggdrasil/Main.native bin/yggdrasil
 
 clean:
@@ -51,8 +51,8 @@ lib:
 links: bin/yggdrasil
 
 test: lib
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib tests/test00.native
-	@_build/tests/test00.native
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil tests/test00.native
+	@${BUILD_DIR}/tests/test00.native
 
 top:
 	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
