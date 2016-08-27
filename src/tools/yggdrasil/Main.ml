@@ -1,28 +1,6 @@
 open Cmdliner
 open Yggdrasil
 
-let position_pp fmt pos =
-  let open Format in
-  let open Lexing in
-  let { pos_fname; pos_lnum; pos_cnum; _ } = pos in
-  fprintf fmt "%s:%d:%d"
-    pos_fname
-    pos_lnum
-    pos_cnum
-
-let position_show pos =
-  let open Format in
-  let buffer = Buffer.create 0 in
-  let fmt = formatter_of_buffer buffer in
-  position_pp fmt pos
-; pp_print_flush fmt ()
-; Buffer.contents buffer
-
-let positions_show = [%derive.show:
-  (Lexing.position [@show.printer position_pp]) *
-  (Lexing.position [@show.printer position_pp])
-  ]
-
 let act_parse file_name =
   let open Format in
   let module P = Parser.Id in
@@ -31,7 +9,7 @@ let act_parse file_name =
   let pos = Lexing.dummy_pos in
   let%lwt ix = Lwt_io.open_file ~mode:Lwt_io.Input file_name in
   let tokens = Lexer.tokens ix in
-  let parse () : Computad.t M.checkpoint = P.Incremental.computad pos in
+  let parse () = P.Incremental.computad pos in
   let rec handler chk =
     match chk with
     | M.AboutToReduce _ ->
@@ -49,12 +27,12 @@ let act_parse file_name =
       begin
         match%lwt Lwt_stream.get tokens with
         | None ->
-          Lwt.fail_with "parser: token stream ended prematurely"
+          Lwt.fail_with "parser :: token stream ended prematurely"
         | Some lexeme ->
           handler @@ M.offer chk (lexeme, pos, pos)
       end
     | M.Rejected ->
-      Lwt.fail_with "parser: rejected"
+      Lwt.fail_with "parser :: rejected"
     | M.Shifting _ ->
       handler @@ M.resume chk in
   handler @@ parse ()
