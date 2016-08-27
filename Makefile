@@ -1,7 +1,7 @@
 BUILD_DIR=${PWD}/_build
 MENHIR_FLAGS=-use-menhir -menhir 'menhir --external-tokens Token --table'
 MKDIR=mkdir -p
-OCAMLBUILD=ocamlbuild
+OCAMLBUILD=rebuild
 OCAMLBUILD_JOBS=-j 0
 OCAMLBUILD_FLAGS=${OCAMLBUILD_JOBS} -use-ocamlfind -no-links ${MENHIR_FLAGS}
 OPAM=opam
