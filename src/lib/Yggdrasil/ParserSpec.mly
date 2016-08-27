@@ -29,7 +29,7 @@ end)
 %type <Rose.t> arity
 %type <Bouquet.t> arity_dom
 %type <Node.t> arity_cod
-%type <Variable.t * Rose.t> bind
+%type <(Variable.t * Rose.t)> bind
 %type <(Variable.t * Rose.t) list> binds
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> cell
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> computad_item
