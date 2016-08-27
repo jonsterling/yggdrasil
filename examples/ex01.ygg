@@ -4,7 +4,7 @@
     (cell list star))
   (sign terms
     (cell zero nat)
-    (cell succ nat)
+    (cell succ (-> nat nat))
     (cell add (-> [nat nat] nat))
     (cell nil list)
     (cell cons (-> [nat list] list))
