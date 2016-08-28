@@ -7,5 +7,6 @@ PKG containers.data
 PKG fmt
 PKG lwt.ppx
 PKG menhirLib
+PKG optics
 PKG ppx_deriving.std
 FLG -short-paths -w +a-6-30-32-39-41-42-48

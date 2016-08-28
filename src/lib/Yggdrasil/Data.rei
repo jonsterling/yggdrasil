@@ -30,7 +30,7 @@ let module Rose: {
 
   let module Lenses: {
     open Optics;
-    let head: Optics.Lens.t (t 'a) 'a;
+    let head: Lens.t (t 'a) 'a;
     let tail: Lens.t (t 'a) (list (t 'a));
   };
 
