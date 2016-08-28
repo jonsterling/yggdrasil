@@ -1,6 +1,6 @@
 type token =
   | EOF
-  | IDENTIFIER of (string)
+  | IDENTIFIER string
   | KEYWORD_ANALYZE
   | KEYWORD_ARITY
   | KEYWORD_CELL
@@ -12,4 +12,5 @@ type token =
   | LEFT_SQUARE_BRACKET
   | RIGHT_PARENTHESIS
   | RIGHT_SQUARE_BRACKET
-  [@@deriving eq, ord, show]
+  [@@deriving (eq, ord, show)]
+  ;
