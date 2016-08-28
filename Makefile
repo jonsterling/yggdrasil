@@ -36,6 +36,9 @@ examples: tools
 tools: bin/yggdrasil
 
 install:
+	@${OPAM} show merlin | grep 'upstream-url.*#reason.*$$' > /dev/null || opam pin add -y merlin 'https://github.com/the-lambda-church/merlin.git#reason-0.0.1'
+	@${OPAM} show merlin_extend | grep 'upstream-url.*#reason.*$$' > /dev/null || opam pin add -y merlin_extend 'https://github.com/let-def/merlin-extend.git#reason-0.0.1'
+	@${OPAM} list -i reason > /dev/null || (mkdir -p dep && pushd dep && git clone https://github.com/facebook/reason.git && pushd reason && opam pin add -y reason . && popd && popd && eval $(opam config env))
 	@${OPAM} list -i cats > /dev/null || ${OPAM} pin add cats git://github.com/freebroccolo/ocaml-cats --yes
 	@${OPAM} list -i optics > /dev/null || ${OPAM} pin add optics git://github.com/freebroccolo/ocaml-optics --yes
 	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin add . --yes

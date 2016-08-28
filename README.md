@@ -7,7 +7,7 @@ A higher-dimensional type theory based on computads
 Prerequisites:
 
 * OPAM `1.2.2`
-* [Reason](https://github.com/facebook/reason#install-master-for-contributors)
+* OCaml `4.02.3`
 
 ```sh
 $ git clone https://github.com/freebroccolo/yggdrasil
