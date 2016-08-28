@@ -20,22 +20,32 @@ let module Ctx: {
 
 let module S = {
   let module Chk = {
-    module type Node = {let arity: Computad.t => Ctx.t => T.Node.t => T.Rose.t => unit;};
+    module type Node = {
+      let arity: Computad.t => Ctx.t => T.Node.t => T.Rose.t => unit;
+    };
   };
   let module Inf = {
     module type Node = {
       let arity: Computad.t => Ctx.t => T.Node.t => T.Rose.t;
       let subtract: Computad.t => Ctx.t => T.Bouquet.t => T.Bouquet.t => T.Bouquet.t;
     };
-    module type Rose = {let arity: Computad.t => Ctx.t => T.Rose.t => T.Rose.t;};
+    module type Rose = {
+      let arity: Computad.t => Ctx.t => T.Rose.t => T.Rose.t;
+    };
   };
-  module type Chk = {let module Node: Chk.Node;};
-  module type Inf = {let module Node: Inf.Node; let module Rose: Inf.Rose;};
+  module type Chk = {
+    let module Node: Chk.Node;
+  };
+  module type Inf = {
+    let module Node: Inf.Node;
+    let module Rose: Inf.Rose;
+  };
 };
 
 let module rec Chk: S.Chk = {
   let module Node = {
-    let arity sigma gamma tm ar => assert (T.Rose.equal (Inf.Node.arity sigma gamma tm) ar);
+    let arity sigma gamma tm ar =>
+      assert (T.Rose.equal (Inf.Node.arity sigma gamma tm) ar);
   };
 }
 and Inf: S.Inf = {

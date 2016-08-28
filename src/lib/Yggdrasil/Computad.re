@@ -29,12 +29,16 @@ let module Patterns: {
         (Trie.to_list trie);
     let assoc fmt => fun
       | ([dom], (cod, _op)) =>
-        fprintf fmt "@[%a@,@ @[=>@ %a@]@]" (Rose.pp dim) dom (Rose.pp dim) cod
+        fprintf fmt "@[%a@,@ @[=>@ %a@]@]"
+          (Rose.pp dim) dom
+          (Rose.pp dim) cod
       | (dom, (cod, _op)) =>
-        fprintf fmt "@[%a@,@ @[=>@ %a@]@]" (CCFormat.list @@ Rose.pp dim) dom (Rose.pp dim) cod;
+        fprintf fmt "@[%a@,@ @[=>@ %a@]@]"
+          (CCFormat.list @@ Rose.pp dim) dom
+          (Rose.pp dim) cod;
     fprintf fmt "@[<v>%a@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
   };
-  type t = (Trie.t (Rose.t, string)) [@show.printer print] [@@deriving show];
+  type t = Trie.t (Rose.t, string) [@show.printer print] [@@deriving show];
 };
 
 let module Map = {
@@ -79,17 +83,23 @@ let module Cells = {
       };
     };
     let list = List.fast_sort sort (Map.to_list map);
-    fprintf fmt "@[<v 2>@[@  @]%a@,@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
+    fprintf fmt "@[<v 2>@[@  @]%a@,@]"
+      (CCFormat.list start::"" sep::"" stop::"" assoc) list
   };
 };
 
 let module Dimensions = {
   let pp (computad: t) fmt map => {
-    let assoc fmt (op, dm) => fprintf fmt "@[<2>(dim@ %a@ %a)@]" Operator.pp op Dimension.pp dm;
+    let assoc fmt (op, dm) =>
+      fprintf fmt "@[<2>(dim@ %a@ %a)@]"
+      (Operator.pp) op
+      (Dimension.pp) dm;
     let sort od0 od1 =>
       switch (od0, od1) {
       | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 =>
-        switch (Rose.compare (Map.find op0 computad.cells) (Map.find op1 computad.cells)) {
+        let ar0 = Map.find op0 computad.cells;
+        let ar1 = Map.find op1 computad.cells;
+        switch (Rose.compare ar0 ar1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
@@ -100,7 +110,8 @@ let module Dimensions = {
         }
       };
     let list = List.fast_sort sort (Map.to_list map);
-    fprintf fmt "@[<v 2>@[@  @]%a@,@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
+    fprintf fmt "@[<v 2>@[@  @]%a@,@]"
+      (CCFormat.list start::"" sep::"" stop::"" assoc) list
   };
 };
 
@@ -119,11 +130,11 @@ let module Rules = {
 
 let pp fmt computad => {
   fprintf fmt "@,@[<v 2>computad:@,";
-  if (not (Map.is_empty computad.cells)) {
+  if (not @@ Map.is_empty computad.cells) {
     fprintf fmt "@,@[<v>cells:@,%a@]"
       (Cells.pp computad) computad.cells
   };
-  if (not (Map.is_empty computad.rules)) {
+  if (not @@ Map.is_empty computad.rules) {
     fprintf fmt "@,@[<v>rules:@,%a@]"
       (Rules.pp computad) computad.rules
   };
@@ -138,9 +149,13 @@ let show computad => {
   Buffer.contents buffer;
 };
 
-let empty = {cells: Map.empty, dimensions: Map.empty, rules: Map.empty};
+let empty = {
+  cells: Map.empty,
+  dimensions: Map.empty,
+  rules: Map.empty,
+};
 
-let bind sigma dim {Cell.name: name, arity} => {
+let bind sigma dim { Cell.name: name, arity } => {
   open Data.Rose;
   let cells = Map.add name arity sigma.cells;
   let dimensions = Map.add name dim sigma.dimensions;

@@ -12,5 +12,4 @@ type token =
   | LEFT_SQUARE_BRACKET
   | RIGHT_PARENTHESIS
   | RIGHT_SQUARE_BRACKET
-  [@@deriving (eq, ord, show)]
-  ;
+  [@@deriving (eq, ord, show)];

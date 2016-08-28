@@ -63,8 +63,8 @@ let module Term = {
           (pp_rose) rho
       | Lm [x] e =>
         fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
-        (Bind.pp) x
-        (node pp_rose) e
+          (Bind.pp) x
+          (node pp_rose) e
       | Lm xs e =>
         let pp_sep fmt () => fprintf fmt "@ ";
         fprintf fmt "@[<2>(λ@ [%a]@ @[<2>%a@])@]"
@@ -146,8 +146,7 @@ let module Term = {
       pp_print_flush fmt ();
       Buffer.contents buffer
     };
-    let pt cod =>
-      Data.Rose.pure cod;
+    let pt cod => Data.Rose.pure cod;
   };
 
   let module Cell = {
