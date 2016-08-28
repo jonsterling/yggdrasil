@@ -51,8 +51,7 @@ let module rec Chk: S.Chk = {
 and Inf: S.Inf = {
   let module rec Node: S.Inf.Node = {
     open T.Node;
-    let rec arity sigma gamma tm =>
-      switch tm {
+    let rec arity sigma gamma tm => switch tm {
       | Ap rho => Rose.arity sigma gamma rho
       | Op op => Computad.arity sigma op
       | Lm xs e =>
@@ -61,8 +60,7 @@ and Inf: S.Inf = {
         Fork cod (dom0 @ dom1)
       | Var x => Ctx.arity gamma x
       }
-    and subtract sigma gamma doms sp =>
-      switch (doms, sp) {
+    and subtract sigma gamma doms sp => switch (doms, sp) {
       | (doms, []) => doms
       | ([dom, ...doms], [tm, ...sp]) =>
         let () = Chk.Node.arity sigma gamma (Ap tm) dom;
@@ -71,8 +69,7 @@ and Inf: S.Inf = {
       };
   }
   and Rose: S.Inf.Rose = {
-    let arity sigma gamma (Fork hd sp) =>
-      switch (Node.arity sigma gamma hd) {
+    let arity sigma gamma (Fork hd sp) => switch (Node.arity sigma gamma hd) {
       | Fork cod dom0 =>
         let dom1 = Node.subtract sigma gamma dom0 sp;
         Fork cod dom1

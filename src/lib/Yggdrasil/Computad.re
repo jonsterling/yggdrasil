@@ -70,13 +70,11 @@ let module Cells = {
       let dm0 = Map.find op0 computad.dimensions;
       let dm1 = Map.find op1 computad.dimensions;
       switch ((op0, dm0), (op1, dm1)) {
-      | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 =>
-        switch (Rose.compare ar0 ar1) {
+      | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 => switch (Rose.compare ar0 ar1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
-      | ((op0, dm0), (op1, dm1)) =>
-        switch (Dimension.compare dm0 dm1) {
+      | ((op0, dm0), (op1, dm1)) => switch (Dimension.compare dm0 dm1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
@@ -94,8 +92,7 @@ let module Dimensions = {
       fprintf fmt "@[<2>(dim@ %a@ %a)@]"
       (Operator.pp) op
       (Dimension.pp) dm;
-    let sort od0 od1 =>
-      switch (od0, od1) {
+    let sort od0 od1 => switch (od0, od1) {
       | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 =>
         let ar0 = Map.find op0 computad.cells;
         let ar1 = Map.find op1 computad.cells;
@@ -103,8 +100,7 @@ let module Dimensions = {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
-      | ((op0, dm0), (op1, dm1)) =>
-        switch (Dimension.compare dm0 dm1) {
+      | ((op0, dm0), (op1, dm1)) => switch (Dimension.compare dm0 dm1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }

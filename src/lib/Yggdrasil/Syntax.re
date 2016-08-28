@@ -56,8 +56,7 @@ let module Term = {
       | Op Operator.t
       | Var Variable.t
     [@@deriving (eq, ord)];
-    let rec node pp_rose fmt tm =>
-      switch tm {
+    let rec node pp_rose fmt tm => switch tm {
       | Ap rho =>
         fprintf fmt "%a"
           (pp_rose) rho
