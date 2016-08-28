@@ -7,3 +7,4 @@ RUN sudo chown -R opam.nogroup /home/opam/yggdrasil
 WORKDIR /home/opam/yggdrasil
 RUN make preinstall
 RUN opam config exec -- make all
+RUN opam config exec -- make test
