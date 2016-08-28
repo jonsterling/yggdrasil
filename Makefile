@@ -1,10 +1,15 @@
 BUILD_DIR=${PWD}/_build
+EVAL=eval
+GIT=git
+GREP=grep
 MENHIR_FLAGS=-use-menhir -menhir 'menhir --external-tokens Token --table'
 MKDIR=mkdir -p
 OCAMLBUILD=rebuild
 OCAMLBUILD_JOBS=-j 0
 OCAMLBUILD_FLAGS=${OCAMLBUILD_JOBS} -use-ocamlfind -no-links ${MENHIR_FLAGS}
 OPAM=opam
+POPD=popd
+PUSHD=pushd
 REMOVE=rm -rf
 SYMLINK=ln -sf
 YGGDRASIL=bin/yggdrasil
@@ -36,13 +41,13 @@ examples: tools
 tools: bin/yggdrasil
 
 install:
-	@${OPAM} show merlin | grep 'upstream-url.*#reason.*$$' > /dev/null || opam pin add -y merlin 'https://github.com/the-lambda-church/merlin.git#reason-0.0.1'
-	@${OPAM} show merlin_extend | grep 'upstream-url.*#reason.*$$' > /dev/null || opam pin add -y merlin_extend 'https://github.com/let-def/merlin-extend.git#reason-0.0.1'
-	@${OPAM} list -i reason > /dev/null || (mkdir -p dep && pushd dep && git clone https://github.com/facebook/reason.git && pushd reason && opam pin add -y reason . && popd && popd && eval $(opam config env))
-	@${OPAM} list -i cats > /dev/null || ${OPAM} pin add cats git://github.com/freebroccolo/ocaml-cats --yes
-	@${OPAM} list -i optics > /dev/null || ${OPAM} pin add optics git://github.com/freebroccolo/ocaml-optics --yes
-	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin add . --yes
-	@make all
+	@${OPAM} show merlin | ${GREP} 'upstream-url.*#reason.*$$' > /dev/null || ${OPAM} pin -y add merlin 'https://github.com/the-lambda-church/merlin.git#reason-0.0.1'
+	@${OPAM} show merlin_extend | ${GREP} 'upstream-url.*#reason.*$$' > /dev/null || ${OPAM} pin -y add merlin_extend 'https://github.com/let-def/merlin-extend.git#reason-0.0.1'
+	@${OPAM} list -i reason > /dev/null || (${MKDIR} dep && ${PUSHD} dep >&- && (${GIT} clone https://github.com/facebook/reason.git 2>&- || true) && ${PUSHD} reason >&- && ${OPAM} pin -y add reason . && ${POPD} >&- && ${POPD} >&- && ${EVAL} $($${OPAM} config env))
+	@${OPAM} list -i cats > /dev/null || ${OPAM} pin -y add cats git://github.com/freebroccolo/ocaml-cats
+	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
+	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin -y add .
+	@$(MAKE) all
 	@echo
 	@echo "* installing binaries at ./bin"
 	@echo
