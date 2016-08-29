@@ -1,0 +1,27 @@
+(computad booleans
+  (sign types
+    (cell bool type))
+  (sign terms
+    (cell ff bool)
+    (cell tt bool)
+    (cell not (-> bool bool))
+    (cell and (-> [bool bool] bool)))
+  (sign rules
+    (cell not/ff (-> (not ff) tt))
+    (cell not/tt (-> (not tt) ff))
+    (cell and/ff/ff (-> (and ff ff) ff))
+    (cell and/ff/tt (-> (and ff tt) ff))
+    (cell and/tt/ff (-> (and tt ff) ff))
+    (cell and/tt/tt (-> (and tt tt) tt))
+    (cell and/eta (lambda [(cell x bool) (cell y bool)] (and x y))))
+  (@@analyze bool)
+  (@@analyze (not ff))
+  (@@analyze (not tt))
+  (@@analyze (and ff ff))
+  (@@analyze (and (and tt tt) ff))
+  (@@analyze (and (and tt tt) tt))
+  (@@analyze (and (and tt tt) (not ff)))
+  (@@analyze and/eta)
+  (@@analyze (lambda (cell x bool) (not x)))
+  (@@analyze (lambda [(cell x bool) (cell y bool)] (and x y)))
+  (@@analyze (lambda (cell x bool) (lambda (cell y bool) (and x y)))))

@@ -101,7 +101,7 @@ let module Term = {
       switch sp {
       | [] => fprintf fmt "%a" (Node.pp dim) hd
       | _ when dim < 2 =>
-        fprintf fmt "@[<2>(->@ %a@ %a)@]"
+        fprintf fmt "@[<2>(→@;<2>%a@ %a)@]"
           (Node.pp dim) hd
           (pp_print_list pp_sep::pp_sep @@ pp dim) sp
       | _ =>
@@ -129,11 +129,11 @@ let module Term = {
         fprintf fmt "%a"
           (Node.node @@ Rose.pp dim) hd
       | [tm] =>
-        fprintf fmt "@[<1>(->@ %a@ %a)@]"
+        fprintf fmt "@[<1>(→@;<2>%a@ %a)@]"
           (Rose.pp dim) tm
           (Node.pp dim) hd
       | _ =>
-        fprintf fmt "@[<1>(->@ [%a]@ %a)@]"
+        fprintf fmt "@[<1>(→@;<2>[%a]@ %a)@]"
           (pp_print_list pp_sep::pp_sep @@ Rose.pp dim) sp
           (Node.pp dim) hd
       }

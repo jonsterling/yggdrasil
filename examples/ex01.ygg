@@ -1,16 +1,16 @@
 (computad lists
   (sign types
-    (cell nat type)
-    (cell list type))
+    (∂ nat type)
+    (∂ list type))
   (sign terms
-    (cell zero nat)
-    (cell succ (-> nat nat))
-    (cell add (-> [nat nat] nat))
-    (cell nil list)
-    (cell cons (-> [nat list] list))
-    (cell map (-> [(-> nat nat) list] list)))
+    (∂ zero nat)
+    (∂ succ (→ nat nat))
+    (∂ add (→ [nat nat] nat))
+    (∂ nil list)
+    (∂ cons (→ [nat list] list))
+    (∂ map (→ [(→ nat nat) list] list)))
   (sign rules
-    (cell map/nil (-> (map succ nil) nil))
-    (cell map/cons (-> (map succ (cons zero nil)) (cons (succ zero) (map succ nil)))))
-  (@@analyze (map (lam (cell x nat) (succ x)) (cons zero nil)))
+    (∂ map/nil (→ (map succ nil) nil))
+    (∂ map/cons (→ (map succ (cons zero nil)) (cons (succ zero) (map succ nil)))))
+  (@@analyze (map (λ (∂ x nat) (succ x)) (cons zero nil)))
   (@@analyze (map succ (cons zero nil))))

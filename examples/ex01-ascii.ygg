@@ -1,0 +1,16 @@
+(computad lists
+  (sign types
+    (cell nat type)
+    (cell list type))
+  (sign terms
+    (cell zero nat)
+    (cell succ (-> nat nat))
+    (cell add (-> [nat nat] nat))
+    (cell nil list)
+    (cell cons (-> [nat list] list))
+    (cell map (-> [(-> nat nat) list] list)))
+  (sign rules
+    (cell map/nil (-> (map succ nil) nil))
+    (cell map/cons (-> (map succ (cons zero nil)) (cons (succ zero) (map succ nil)))))
+  (@@analyze (map (lambda (cell x nat) (succ x)) (cons zero nil)))
+  (@@analyze (map succ (cons zero nil))))

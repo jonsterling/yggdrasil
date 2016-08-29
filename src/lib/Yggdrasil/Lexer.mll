@@ -20,14 +20,17 @@ module Make (R : SOURCE) : LEXER = struct
     table
 
   let keywords =
-    make_table 1 [
+    make_table 10 [
       ("@@analyze", KEYWORD_ANALYZE);
       ("->", KEYWORD_ARITY);
       ("cell", KEYWORD_CELL);
       ("computad", KEYWORD_COMPUTAD);
-      ("lam", KEYWORD_LAMBDA);
+      ("lambda", KEYWORD_LAMBDA);
       ("sign", KEYWORD_SIGN);
       ("type", KEYWORD_TYPE);
+      ("→", KEYWORD_ARITY);
+      ("∂", KEYWORD_CELL);
+      ("λ", KEYWORD_LAMBDA);
     ]
 }
 
