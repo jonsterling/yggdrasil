@@ -58,9 +58,7 @@ preinstall:
 	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
 	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin -y add .
 
-test: lib
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil tests/test00.native
-	@${BUILD_DIR}/tests/test00.native
+test: examples
 
 tools: bin/yggdrasil
 
