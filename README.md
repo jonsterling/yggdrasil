@@ -30,7 +30,9 @@ $ ./bin/yggdrasil parse examples/ex00.ygg
 This will parse the example `ex00.ygg`, do some analysis, and print the result
 (see below). You can also run all of the examples with `make examples`.
 
-```
+<details>
+  <summary>`$ make example`</summary>
+<pre>
 term: bool
 type: type
 
@@ -89,4 +91,5 @@ computad:
     not ≜
       ff => tt
       tt => ff
-```
+</pre>
+</details>
