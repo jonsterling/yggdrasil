@@ -17,7 +17,7 @@ $ cd yggdrasil
 $ make install
 ```
 
-This will compile the project and place binaries in the local `bin` directory.
+This will compile the project and place binaries in the `./bin` directory.
 
 #### Running
 
