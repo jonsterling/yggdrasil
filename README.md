@@ -1,5 +1,7 @@
 # Yggdrasil
 
+[![Travis Build Status](https://travis-ci.org/freebroccolo/yggdrasil.svg?branch=master)](https://travis-ci.org/freebroccolo/yggdrasil)
+
 A higher-dimensional type theory based on computads
 
 #### Building
