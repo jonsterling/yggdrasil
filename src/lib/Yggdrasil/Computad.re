@@ -29,11 +29,11 @@ let module Patterns: {
         (Trie.to_list trie);
     let assoc fmt => fun
       | ([dom], (cod, _op)) =>
-        fprintf fmt "@[%a@,@ @[⇒@;<2>%a@]@]"
+        fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
           (Rose.pp dim) dom
           (Rose.pp dim) cod
       | (dom, (cod, _op)) =>
-        fprintf fmt "@[%a@,@ @[⇒@;<2>%a@]@]"
+        fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
           (CCFormat.list @@ Rose.pp dim) dom
           (Rose.pp dim) cod;
     fprintf fmt "@[<v>%a@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
