@@ -32,7 +32,7 @@ enough structure so that they are well behaved in the sense that all of their
 pasting diagrams compose coherently, they are in fact ∞-categories. With
 invertible cells, we similarly get ∞-groupoids.
 
-#### Example
+### Example
 
 Below is a part of a 3-computad presenting addition for the natural numbers:
 
