@@ -8,18 +8,33 @@ A higher-dimensional language based on computads
 
 Yggdrasil is an attempt to create a language for computing with computads.
 
+#### Computads
+
 Computads are a very general notion of directed higher-dimensional graphs useful
-for defining structures like ∞-categories. They were first described by Street
-and later independently by Burroni.
+for defining elaborate structures like ∞-categories. They were first described
+by Street and later independently by Burroni.
 
 What do computads look like? There are different kind of computads but ours are
 "opetopic" and have a shape that corresponds to higher-dimensional trees, hence
-the name Yggdrasil. The idea is that these higher-dimensional trees are a good
-fit for encoding signatures in the sense of universal algebra but expressed in
-terms of pasting diagrams or cell complexes.
+the name Yggdrasil.
 
-Below is an example 3-computad presenting part of the definition of addition for
-natural numbers:
+#### Signatures
+
+The idea is that higher-dimensional trees are a good way to encode signatures in
+the sense of universal algebra. Because we work with higher-dimensional pasting
+diagrams, we can talk about (directed) higher homotopies and generalize beyond
+3-dimensions (sorts, terms, rules) all the way up to infinity.
+
+#### ∞-Categories
+
+When we have these kind of infinite dimensional signatures and they also have
+enough structure so that they are well behaved in the sense that all of their
+pasting diagrams compose properly, they are in fact ∞-categories. With
+invertible cells, we similarly get ∞-groupoids.
+
+#### Example
+
+Below is a part of a 3-computad presenting addition for the natural numbers:
 
 ![3-computad](assets/computad-small.png "3-computad for natural number addition")
 
