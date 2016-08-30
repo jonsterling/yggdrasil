@@ -2,9 +2,30 @@
 
 [![Travis Build Status](https://travis-ci.org/freebroccolo/yggdrasil.svg?branch=master)](https://travis-ci.org/freebroccolo/yggdrasil)
 
-A higher-dimensional type theory based on computads
+A higher-dimensional language based on computads
 
-#### Building
+## Synopsis
+
+Yggdrasil is an attempt to create a language for computing with computads.
+
+Computads are a very general notion of directed higher-dimensional graphs useful
+for defining structures like ∞-categories. They were first described by Street
+and later independently by Burroni.
+
+What do computads look like? There are different kind of computads but ours are
+"opetopic" and have a shape that corresponds to higher-dimensional trees, hence
+the name Yggdrasil. The idea is that these higher-dimensional trees are a good
+fit for encoding signatures in the sense of universal algebra but expressed in
+terms of pasting diagrams or cell complexes.
+
+Below is an example 3-computad presenting part of the definition of addition for
+natural numbers:
+
+![3-computad](assets/computad-small.png "3-computad for natural number addition")
+
+## Usage
+
+### Building
 
 Prerequisites:
 
@@ -19,7 +40,7 @@ $ make install
 
 This will compile the project and place binaries in the `./bin` directory.
 
-#### Running
+### Running
 
 Run the examples:
 
@@ -94,7 +115,7 @@ computad:
 </pre>
 </details>
 
-#### Contributing
+## Contributing
 
 If you'd like to help, the best place to start are issues with the following labels:
 
