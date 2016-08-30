@@ -30,7 +30,7 @@ diagrams, we can talk about (directed) higher homotopies and generalize beyond
 When we have these kind of infinite dimensional signatures and they also have
 enough structure so that they are well behaved in the sense that all of their
 pasting diagrams compose coherently, they are in fact ∞-categories. With
-invertible cells, we similarly get ∞-groupoids.
+invertible cells, we similarly obtain ∞-groupoids.
 
 ### Example
 
