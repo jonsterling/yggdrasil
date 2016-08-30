@@ -14,9 +14,9 @@ REMOVE=rm -rf
 SYMLINK=ln -sf
 YGGDRASIL=bin/yggdrasil
 
-.PHONY: all clean examples install lib links preinstall tests tools top
+.PHONY: all clean examples install lib-byte lib-native links preinstall tests tools top
 
-all: lib links tools
+all: lib-byte lib-native links tools
 
 bin:
 	@${MKDIR} bin
@@ -45,7 +45,10 @@ install: preinstall
 	@echo
 	@echo "* run './bin/yggdrasil help' for details"
 
-lib:
+lib-byte:
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
+
+lib-native:
 	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa
 
 links: bin/yggdrasil
@@ -58,10 +61,9 @@ preinstall:
 	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
 	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin -y add .
 
-test: examples
+test: all examples
 
 tools: bin/yggdrasil
 
-top:
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
-	@utop
+top: lib-byte
+	@rtop
