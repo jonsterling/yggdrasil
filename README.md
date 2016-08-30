@@ -18,7 +18,7 @@ What do computads look like? There are different kind of computads but ours are
 "opetopic" and have a shape that corresponds to higher-dimensional trees, hence
 the name Yggdrasil.
 
-#### Signatures
+#### ∞-Signatures
 
 The idea is that higher-dimensional trees are a good way to encode signatures in
 the sense of universal algebra. Because we work with higher-dimensional pasting
