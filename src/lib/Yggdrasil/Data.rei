@@ -24,7 +24,7 @@ let module Rose: {
   let pp: (Format.formatter => 'a => unit) => Format.formatter => t 'a => unit;
   let show: (Format.formatter => 'a => unit) => t 'a => string;
 
-  let module Bouquet: {
+  let module Corolla: {
     type nonrec t 'a = list (t 'a) [@@deriving (eq, ord, show)];
   };
 

@@ -1,78 +1,77 @@
-open Data.Rose;
-
-let module T = Syntax.Term;
+let module R = Data.Rose;
+let module S = Syntax;
 
 let module Ctx: {
   type t [@@deriving (eq, ord)];
   let empty: t;
-  let push: t => list T.Bind.t => t;
-  let arity: t => T.Variable.t => T.Rose.t;
+  let push: t => S.Telescope.t => t;
+  let arity: t => S.Variable.t => S.Frame.t;
 } = {
-  type t = list T.Bind.t [@@deriving (eq, ord)];
+  type t = S.Telescope.t [@@deriving (eq, ord)];
   let empty = [];
   let push = List.append;
   let arity gamma x => {
-    let pred (y, _) => T.Variable.equal x y;
+    let pred (y, _) => S.Variable.equal x y;
     let (_, ar) = List.find pred gamma;
     ar
   };
 };
 
-let module S = {
+let module Sig = {
   let module Chk = {
-    module type Node = {
-      let arity: Computad.t => Ctx.t => T.Node.t => T.Rose.t => unit;
+    module type Face = {
+      let arity: Computad.t => Ctx.t => S.Face.t => S.Frame.t => unit;
     };
   };
   let module Inf = {
-    module type Node = {
-      let arity: Computad.t => Ctx.t => T.Node.t => T.Rose.t;
-      let subtract: Computad.t => Ctx.t => T.Bouquet.t => T.Bouquet.t => T.Bouquet.t;
+    module type Face = {
+      let arity: Computad.t => Ctx.t => S.Face.t => S.Frame.t;
+      let subtract: Computad.t => Ctx.t => S.Niche.t => S.Complex.t => S.Niche.t;
     };
-    module type Rose = {
-      let arity: Computad.t => Ctx.t => T.Rose.t => T.Rose.t;
+    module type Term = {
+      let arity: Computad.t => Ctx.t => S.Term.t => S.Frame.t;
     };
   };
   module type Chk = {
-    let module Node: Chk.Node;
+    let module Face: Chk.Face;
   };
   module type Inf = {
-    let module Node: Inf.Node;
-    let module Rose: Inf.Rose;
+    let module Face: Inf.Face;
+    let module Term: Inf.Term;
   };
 };
 
-let module rec Chk: S.Chk = {
-  let module Node = {
+let module rec Chk: Sig.Chk = {
+  let module Face = {
     let arity sigma gamma tm ar =>
-      assert (T.Rose.equal (Inf.Node.arity sigma gamma tm) ar);
+      assert (S.Term.equal (Inf.Face.arity sigma gamma tm) ar);
   };
 }
-and Inf: S.Inf = {
-  let module rec Node: S.Inf.Node = {
-    open T.Node;
+and Inf: Sig.Inf = {
+  let module rec Face: Sig.Inf.Face = {
+    open S.Face;
     let rec arity sigma gamma tm => switch tm {
-      | Ap rho => Rose.arity sigma gamma rho
+      | Ap rho => Term.arity sigma gamma rho
       | Op op => Computad.arity sigma op
-      | Lm xs e =>
+      | Lam xs e =>
         let dom0 = CCList.map snd xs;
-        let Fork cod dom1 = arity sigma (Ctx.push gamma xs) e;
-        Fork cod (dom0 @ dom1)
+        let R.Fork cod dom1 = arity sigma (Ctx.push gamma xs) e;
+        R.Fork cod (dom0 @ dom1)
       | Var x => Ctx.arity gamma x
       }
     and subtract sigma gamma doms sp => switch (doms, sp) {
       | (doms, []) => doms
       | ([dom, ...doms], [tm, ...sp]) =>
-        let () = Chk.Node.arity sigma gamma (Ap tm) dom;
+        let () = Chk.Face.arity sigma gamma (Ap tm) dom;
         subtract sigma gamma doms sp
       | _ => assert false
       };
   }
-  and Rose: S.Inf.Rose = {
-    let arity sigma gamma (Fork hd sp) => switch (Node.arity sigma gamma hd) {
-      | Fork cod dom0 =>
-        let dom1 = Node.subtract sigma gamma dom0 sp;
-        Fork cod dom1
+  and Term: Sig.Inf.Term = {
+    let arity sigma gamma (R.Fork hd sp) => switch (Face.arity sigma gamma hd) {
+      | R.Fork cod dom0 =>
+        let dom1 = Face.subtract sigma gamma dom0 sp;
+        R.Fork cod dom1
       };
   };
 };

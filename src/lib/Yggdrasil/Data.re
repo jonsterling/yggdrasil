@@ -56,7 +56,7 @@ let module Rose = {
 
   let show pp_elem => [%derive.show: t 'a [@printer pp pp_elem]];
 
-  let module Bouquet = {
+  let module Corolla = {
     type nonrec t 'a = list (Def.t 'a);
     let equal = equal_bouquet;
     let compare = compare_bouquet;

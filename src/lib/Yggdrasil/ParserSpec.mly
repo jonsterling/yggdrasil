@@ -1,8 +1,7 @@
 %{
 [@@@warning "-9"]
-open Syntax.Term
-open Arity
 open Format
+open Syntax
 
 module Ctx = CCSet.Make(struct
   type t = Operator.t
@@ -26,78 +25,78 @@ end)
 %token RIGHT_PARENTHESIS
 %token RIGHT_SQUARE_BRACKET
 
-%type <Rose.t> arity
-%type <Bouquet.t> arity_dom
-%type <Node.t> arity_cod
-%type <(Variable.t * Rose.t)> bind
-%type <(Variable.t * Rose.t) list> binds
+%type <Frame.t> frame
+%type <Niche.t> frame_niche
+%type <Face.t> frame_face
+%type <Bind.t> bind
+%type <Telescope.t> telescope
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> cell
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> computad_item
-%type <Ctx.t -> Node.t> node
-%type <Ctx.t -> Node.t> node_parens
-%type <Ctx.t -> Node.t> operator_or_variable
-%type <Ctx.t -> Rose.t> rose
-%type <Ctx.t -> Rose.t> rose_parens
+%type <Ctx.t -> Face.t> face
+%type <Ctx.t -> Face.t> face_parens
+%type <Ctx.t -> Face.t> operator_or_variable
+%type <Ctx.t -> Term.t> term
+%type <Ctx.t -> Term.t> term_parens
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> sign
 
 %start <Computad.t M.T.el> computad
 
 %%
 
-arity:
+frame:
   | LEFT_PARENTHESIS
   ; KEYWORD_ARITY
-  ; dom = arity_dom
-  ; cod = arity_cod
+  ; niche = frame_niche
+  ; face = frame_face
   ; RIGHT_PARENTHESIS
-{ dom --> cod }
-  | cod = arity_cod
-{ pt cod }
+{ niche --> face }
+  | face = frame_face
+{ Frame.point face }
   ;
 
-arity_dom:
+frame_niche:
   | LEFT_SQUARE_BRACKET
-  ; dom = list(arity)
+  ; niche = list(frame)
   ; RIGHT_SQUARE_BRACKET
-{ dom }
-  | dom = rose
-{ dom Ctx.empty :: [] }
+{ niche }
+  | frame = frame
+{ frame :: [] }
   ;
 
-arity_cod:
+frame_face:
   | KEYWORD_TYPE
 { Builtin.star }
-  | cod = node
-{ cod Ctx.empty }
+  | face = face
+{ face Ctx.empty }
   ;
 
 bind:
   | LEFT_PARENTHESIS
   ; KEYWORD_CELL
-  ; op = IDENTIFIER
-  ; ar = arity
+  ; var = IDENTIFIER
+  ; frame = frame
   ; RIGHT_PARENTHESIS
-{ (op, ar) }
+{ (var, frame) }
   ;
 
-binds:
+telescope:
   | bind = bind
 { bind :: [] }
   | LEFT_SQUARE_BRACKET
-  ; binds = list(bind)
+  ; telescope = list(bind)
   ; RIGHT_SQUARE_BRACKET
-{ binds }
+{ telescope }
   ;
 
 cell:
   | LEFT_PARENTHESIS
   ; KEYWORD_CELL
   ; op = IDENTIFIER
-  ; ar = arity
+  ; frame = frame
   ; RIGHT_PARENTHESIS
 {
   fun (sigma, i) ->
-    let sigma = Computad.bind sigma i (op <: ar) in
+    let sigma = Computad.bind sigma i (op <: frame) in
     (sigma, i)
 }
   ;
@@ -120,72 +119,72 @@ computad_item:
 { sign }
   | LEFT_PARENTHESIS
   ; KEYWORD_ANALYZE
-  ; node = node
+  ; face = face
   ; RIGHT_PARENTHESIS
 {
   fun sigma ->
     let module T = Typing in
     let dim = 2 in
-    let node = node Ctx.empty in
-    let rose = T.Inf.Node.arity (fst sigma) T.Ctx.empty node in
+    let face = face Ctx.empty in
+    let frame = T.Inf.Face.arity (fst sigma) T.Ctx.empty face in
     let () =
       fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
-        (Node.pp dim) node
-        (Arity.pp dim) rose
+        (Face.pp dim) face
+        (Frame.pp dim) frame
     ; pp_print_flush std_formatter () in
     sigma
 }
   ;
 
-node:
-  | node = operator_or_variable
-{ node }
+face:
+  | face = operator_or_variable
+{ face }
   | LEFT_PARENTHESIS
-  ; node = node_parens
+  ; face = face_parens
   ; RIGHT_PARENTHESIS
-{ node }
+{ face }
   ;
 
-node_parens:
+face_parens:
   | KEYWORD_LAMBDA
-  ; binds = binds
-  ; body = node
+  ; telescope = telescope
+  ; face = face
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst binds in
-    Node.Lm (binds, body gamma)
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
+    Face.Lam (telescope, face gamma)
 }
-  | node = operator_or_variable
-  ; spine = nonempty_list(rose)
-{ fun gamma -> node gamma *@ CCList.map ((|>) gamma) spine }
+  | face = operator_or_variable
+  ; complex = nonempty_list(term)
+{ fun gamma -> face gamma *@ CCList.map ((|>) gamma) complex }
   ;
 
 operator_or_variable:
   | id = IDENTIFIER
-{ fun gamma -> if Ctx.mem id gamma then Node.Var id else Node.Op id }
+{ fun gamma -> if Ctx.mem id gamma then Face.Var id else Face.Op id }
   ;
 
-rose:
-  | node = operator_or_variable
-{ fun gamma -> [] --> node gamma }
+term:
+  | face = operator_or_variable
+{ fun gamma -> [] --> face gamma }
   | LEFT_PARENTHESIS
-  ; rose = rose_parens
+  ; term = term_parens
   ; RIGHT_PARENTHESIS
-{ rose }
+{ term }
   ;
 
-rose_parens:
+term_parens:
   | KEYWORD_LAMBDA
-  ; binds = binds
-  ; body = node
+  ; telescope = telescope
+  ; face = face
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst binds in
-    [] --> Node.Lm (binds, body gamma)
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
+    [] --> Face.Lam (telescope, face gamma)
 }
-  | node = operator_or_variable
-  ; spine = nonempty_list(rose)
-{ fun gamma -> CCList.map ((|>) gamma) spine --> node gamma }
+  | face = operator_or_variable
+  ; complex = nonempty_list(term)
+{ fun gamma -> CCList.map ((|>) gamma) complex --> face gamma }
   ;
 
 sign:

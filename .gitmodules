@@ -1,3 +1,0 @@
-[submodule "doc/models/simple/modules/agda-prelude"]
-	path = doc/models/simple/modules/agda-prelude
-	url = git://github.com/freebroccolo/agda-prelude.git

@@ -1,148 +1,180 @@
-let module Term = {
-  open Data.Rose;
-  open Format;
+open Format;
+let module R = Data.Rose;
 
-  let module Dimension = {
-    type t = int [@@deriving (eq, ord, show)];
-  };
+let module Dimension = {
+  type t = int [@@deriving (eq, ord, show)];
+};
 
-  let module Operator = {
-    type t = string [@show.printer pp_print_string] [@@deriving (eq, ord, show)];
-  };
+let module Operator = {
+  type t = string [@show.printer pp_print_string] [@@deriving (eq, ord, show)];
+};
 
-  let module Variable = {
-    type t = string [@show.printer pp_print_string] [@@deriving (eq, ord, show)];
-  };
+let module Variable = {
+  type t = string [@show.printer pp_print_string] [@@deriving (eq, ord, show)];
+};
 
-  let module rec Bind: {
-    type t = (Variable.t, Rose.t) [@@deriving (eq, ord, show)];
-  } = {
-    type t = (Variable.t, Rose.t) [@@deriving (eq, ord)];
-    let pp fmt (x, ar) =>
-      fprintf fmt "(∂@ %a@ %a)"
-        (pp_print_string) x
-        (Rose.pp 0) ar;
-    let show = [%derive.show: t [@printer pp]];
-  }
+let module rec Bind: {
+  type t = (Variable.t, Frame.t) [@@deriving (eq, ord, show)];
+} = {
+  type t = (Variable.t, Frame.t) [@@deriving (eq, ord)];
+  let pp fmt (x, ar) =>
+    fprintf fmt "(∂@ %a@ %a)"
+      (pp_print_string) x
+      (Frame.pp 0) ar;
+  let show = [%derive.show: t [@printer pp]];
+}
 
-  and Bouquet: {
-    type t = Data.Rose.Bouquet.t Node.t [@@deriving (eq, ord)];
-  } = {
-    type t = Data.Rose.Bouquet.t Node.t [@@deriving (eq, ord)];
-  }
+and Complex: {
+  type t = Data.Rose.Corolla.t Face.t [@@deriving (eq, ord)];
+} = {
+  type t = Data.Rose.Corolla.t Face.t [@@deriving (eq, ord)];
+}
 
-  and Node: {
-    type t =
-      | Ap Rose.t
-      | Lm (list Bind.t) t
-      | Op Operator.t
-      | Var Variable.t
-    [@@deriving (eq, ord)];
-    let pp: Dimension.t => formatter => t => unit;
-    let pp_node: (formatter => Rose.t => unit) => formatter => Node.t => unit;
-    let show: Dimension.t => t => string;
-    let ap: Node.t => Bouquet.t => t;
-    let op: Operator.t => t;
-  } = {
-    type t =
-      | Ap Rose.t
-      | Lm (list Bind.t) t
-      | Op Operator.t
-      | Var Variable.t
-    [@@deriving (eq, ord)];
-    let rec pp_node pp_rose fmt tm => switch tm {
-      | Ap rho =>
-        fprintf fmt "%a"
-          (pp_rose) rho
-      | Lm [x] e =>
-        fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
-          (Bind.pp) x
-          (pp_node pp_rose) e
-      | Lm xs e =>
-        let pp_sep fmt () => fprintf fmt "@ ";
-        fprintf fmt "@[<2>(λ@ [%a]@ @[<2>%a@])@]"
-          (pp_print_list pp_sep::pp_sep Bind.pp) xs
-          (pp_node pp_rose) e
-      | Op theta =>
-        fprintf fmt "%a"
-          (Operator.pp) theta
-      | Var x =>
-        fprintf fmt "%a"
-          (Variable.pp) x
-      };
-    let pp dim => pp_node @@ Rose.pp dim;
-    let show dim => [%derive.show: t [@printer pp dim]];
-    let ap hd sp => Ap (Fork hd sp);
-    let op head => Op head;
-  }
-
-  and Rose: {
-    type t = Data.Rose.t Node.t [@@deriving (eq, ord)];
-    let pp: Dimension.t => formatter => t => unit;
-    let show: Dimension.t => t => string;
-    let ap: Rose.t => Bouquet.t => Rose.t;
-    let op: Operator.t => Bouquet.t => Rose.t;
-  } = {
-    type t = Data.Rose.t Node.t [@@deriving (eq, ord)];
-    let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+and Face: {
+  type t =
+    | Ap Term.t
+    | Lam Telescope.t t
+    | Op Operator.t
+    | Var Variable.t
+  [@@deriving (eq, ord)];
+  let pp: Dimension.t => formatter => t => unit;
+  let pp_node: (formatter => Term.t => unit) => formatter => t => unit;
+  let show: Dimension.t => t => string;
+  let ap: Face.t => Complex.t => t;
+  let op: Operator.t => t;
+} = {
+  type t =
+    | Ap Term.t
+    | Lam Telescope.t t
+    | Op Operator.t
+    | Var Variable.t
+  [@@deriving (eq, ord)];
+  let rec pp_node pp_rose fmt tm => switch tm {
+  | Ap rho =>
+      fprintf fmt "%a"
+        (pp_rose) rho
+    | Lam [x] e =>
+      fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
+        (Bind.pp) x
+        (pp_node pp_rose) e
+    | Lam xs e =>
       let pp_sep fmt () => fprintf fmt "@ ";
-      switch sp {
-      | [] => fprintf fmt "%a" (Node.pp dim) hd
-      | _ when dim < 2 =>
-        fprintf fmt "@[<2>(→@ %a@ %a)@]"
-          (Node.pp dim) hd
-          (pp_print_list pp_sep::pp_sep @@ pp dim) sp
-      | _ =>
-        fprintf fmt "@[<2>(%a@ %a)@]"
-          (Node.pp dim) hd
-          (pp_print_list pp_sep::pp_sep @@ pp dim) sp
-      }
+      fprintf fmt "@[<2>(λ@ [%a]@ @[<2>%a@])@]"
+        (pp_print_list pp_sep::pp_sep Bind.pp) xs
+        (pp_node pp_rose) e
+    | Op theta =>
+      fprintf fmt "%a"
+        (Operator.pp) theta
+    | Var x =>
+      fprintf fmt "%a"
+        (Variable.pp) x
     };
-    let show dim => [%derive.show: t [@printer pp dim]];
-    let ap head spine => Fork (Node.Ap head) spine;
-    let op head spine => Fork (Node.Op head) spine;
-  };
+  let pp dim => pp_node @@ Term.pp dim;
+  let show dim => [%derive.show: t [@printer pp dim]];
+  let ap hd sp => Ap (R.Fork hd sp);
+  let op head => Op head;
+}
 
-  let module Arity = {
-    let rec pp dim fmt (Data.Rose.Fork hd sp) => {
-      let pp_sep fmt () => fprintf fmt "@ ";
-      switch sp {
-      | [] =>
-        fprintf fmt "%a"
-          (Node.pp_node @@ Rose.pp dim) hd
-      | [tm] =>
-        fprintf fmt "@[<1>(→@ %a@ %a)@]"
-          (Rose.pp dim) tm
-          (Node.pp dim) hd
-      | _ =>
-        fprintf fmt "@[<1>(→@ [%a]@ %a)@]"
-          (pp_print_list pp_sep::pp_sep @@ Rose.pp dim) sp
-          (Node.pp dim) hd
-      }
-    };
-    let show dim => [%derive.show: Rose.t [@printer pp dim]];
-    let pt cod => Data.Rose.pure cod;
+and Frame: {
+  type t = Term.t [@@deriving (eq, ord)];
+  let pp: Dimension.t => formatter => t => unit;
+  let show: Dimension.t => t => string;
+  let point: Face.t => t;
+} = {
+  type t = Term.t;
+  let equal = Term.equal;
+  let compare = Term.compare;
+  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+    let pp_sep fmt () => fprintf fmt "@ ";
+    switch sp {
+    | [] =>
+      fprintf fmt "%a"
+        (Face.pp_node @@ Term.pp dim) hd
+    | [tm] =>
+      fprintf fmt "@[<1>(→@ %a@ %a)@]"
+        (Term.pp dim) tm
+        (Face.pp dim) hd
+    | _ =>
+      fprintf fmt "@[<1>(→@ [%a]@ %a)@]"
+        (pp_print_list pp_sep::pp_sep @@ Term.pp dim) sp
+        (Face.pp dim) hd
+    }
   };
+  let show dim => [%derive.show: Term.t [@printer pp dim]];
+  let point cod => Data.Rose.pure cod;
+}
 
-  let module Cell = {
-    type t = {
-      name: Operator.t,
-      arity: Rose.t,
-    } [@@deriving (eq, ord)];
+and Niche: {
+  type t = Complex.t [@@deriving (eq, ord)];
+} = {
+  type t = Complex.t;
+  let equal = Complex.equal;
+  let compare = Complex.compare;
+  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+    let pp_sep fmt () => fprintf fmt "@ ";
+    switch sp {
+    | [] =>
+      fprintf fmt "%a"
+        (Face.pp_node @@ Term.pp dim) hd
+    | [tm] =>
+      fprintf fmt "@[<1>(→@ %a@ %a)@]"
+        (Term.pp dim) tm
+        (Face.pp dim) hd
+    | _ =>
+      fprintf fmt "@[<1>(→@ [%a]@ %a)@]"
+        (pp_print_list pp_sep::pp_sep @@ Term.pp dim) sp
+        (Face.pp dim) hd
+    }
   };
+  let show dim => [%derive.show: Term.t [@printer pp dim]];
+  let pt cod => Data.Rose.pure cod;
+}
 
-  let (*@) head spine => Node.Ap (Fork head spine);
-  let (-->) dom cod => Fork cod dom;
-  let (<:) name arity => {
-    Cell.name: name,
-    arity,
-  };
-  let (<!) name cod => {
-    Cell.name: name,
-    arity: Arity.pt cod,
-  };
+and Telescope: {
+  type t = list Bind.t [@@deriving (eq, ord)];
+} = {
+  type t = list Bind.t [@@deriving (eq, ord)];
+}
 
-  let module Builtin = {
-    let star = Node.op "type";
+and Term: {
+  type t = Data.Rose.t Face.t [@@deriving (eq, ord)];
+  let pp: Dimension.t => formatter => t => unit;
+  let show: Dimension.t => t => string;
+  let ap: t => Complex.t => t;
+  let op: Operator.t => Complex.t => t;
+} = {
+  type t = Data.Rose.t Face.t [@@deriving (eq, ord)];
+  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+    let pp_sep fmt () => fprintf fmt "@ ";
+    switch sp {
+    | [] => fprintf fmt "%a" (Face.pp dim) hd
+    | _ when dim < 2 =>
+      fprintf fmt "@[<2>(→@ %a@ %a)@]"
+        (Face.pp dim) hd
+        (pp_print_list pp_sep::pp_sep @@ pp dim) sp
+    | _ =>
+      fprintf fmt "@[<2>(%a@ %a)@]"
+        (Face.pp dim) hd
+        (pp_print_list pp_sep::pp_sep @@ pp dim) sp
+    }
   };
+  let show dim => [%derive.show: t [@printer pp dim]];
+  let ap head spine => R.Fork (Face.Ap head) spine;
+  let op head spine => R.Fork (Face.Op head) spine;
+};
+
+let module Cell = {
+  type t = {
+    op: Operator.t,
+    frame: Frame.t,
+  } [@@deriving (eq, ord)];
+};
+
+let (*@) head spine => Face.Ap (R.Fork head spine);
+let (-->) dom cod => R.Fork cod dom;
+let (<:) op frame => { Cell.op, frame };
+let (<!) op face => { Cell.op, frame: Frame.point face };
+
+let module Builtin = {
+  let star = Face.op "type";
 };

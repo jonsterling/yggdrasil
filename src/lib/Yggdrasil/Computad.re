@@ -1,26 +1,23 @@
 open Format;
+open Syntax;
 
-module type S = {
-  open Syntax.Term;
+module type Sig = {
   type t [@@deriving show];
   let empty: t;
   let bind: t => Dimension.t => Cell.t => t;
-  let arity: t => Operator.t => Rose.t;
+  let arity: t => Operator.t => Frame.t;
 };
 
 let module Trie = {
-  open Syntax.Term;
   include CCTrie.MakeList {
-    type t = Rose.t;
-    let compare = Rose.compare;
+    type t = Term.t;
+    let compare = Term.compare;
   };
 };
 
 let module Patterns: {
-  open Syntax.Term;
-  type t = Trie.t (Rose.t, Operator.t) [@@deriving show];
+  type t = Trie.t (Term.t, Operator.t) [@@deriving show];
 } = {
-  open Syntax.Term;
   let print fmt trie => {
     let dim = 2;
     let list =
@@ -30,29 +27,26 @@ let module Patterns: {
     let assoc fmt => fun
       | ([dom], (cod, _op)) =>
         fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
-          (Rose.pp dim) dom
-          (Rose.pp dim) cod
+          (Term.pp dim) dom
+          (Term.pp dim) cod
       | (dom, (cod, _op)) =>
         fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
-          (CCFormat.list @@ Rose.pp dim) dom
-          (Rose.pp dim) cod;
+          (CCFormat.list @@ Term.pp dim) dom
+          (Term.pp dim) cod;
     fprintf fmt "@[<v>%a@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
   };
-  type t = Trie.t (Rose.t, string) [@show.printer print] [@@deriving show];
+  type t = Trie.t (Term.t, string) [@show.printer print] [@@deriving show];
 };
 
 let module Map = {
-  open Syntax.Term;
   include CCMap.Make {
     type t = Operator.t;
     let compare = compare;
   };
 };
 
-open Syntax.Term;
-
 type t = {
-  cells: Map.t Rose.t,
+  cells: Map.t Frame.t,
   dimensions: Map.t Dimension.t,
   rules: Map.t Patterns.t,
 };
@@ -64,13 +58,13 @@ let module Cells = {
       fprintf fmt "@[<6>[%a]@ (∂@ %a@ %a)@]"
         (Dimension.pp) (Map.find op computad.dimensions)
         (Operator.pp) op
-        (Arity.pp dm) ar
+        (Frame.pp dm) ar
     };
     let sort (op0, ar0) (op1, ar1) => {
       let dm0 = Map.find op0 computad.dimensions;
       let dm1 = Map.find op1 computad.dimensions;
       switch ((op0, dm0), (op1, dm1)) {
-      | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 => switch (Rose.compare ar0 ar1) {
+      | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 => switch (Term.compare ar0 ar1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
@@ -96,7 +90,7 @@ let module Dimensions = {
       | ((op0, dm0), (op1, dm1)) when dm0 < 2 && Dimension.equal dm0 dm1 =>
         let ar0 = Map.find op0 computad.cells;
         let ar1 = Map.find op1 computad.cells;
-        switch (Rose.compare ar0 ar1) {
+        switch (Term.compare ar0 ar1) {
         | 0 => Operator.compare op0 op1
         | ord => ord
         }
@@ -145,15 +139,15 @@ let empty = {
   rules: Map.empty,
 };
 
-let bind sigma dim { Cell.name: name, arity } => {
+let bind sigma dim { Cell.op, frame } => {
   open Data.Rose;
-  let cells = Map.add name arity sigma.cells;
-  let dimensions = Map.add name dim sigma.dimensions;
-  let rules = switch arity {
-    | Fork res [Fork (Node.Op theta) args] when dim > 1 =>
+  let cells = Map.add op frame sigma.cells;
+  let dimensions = Map.add op dim sigma.dimensions;
+  let rules = switch frame {
+    | Fork face [Fork (Face.Op theta) args] when dim > 1 =>
       let update = fun
-        | None => Some (Trie.add args (Arity.pt res, name) Trie.empty)
-        | Some pre => Some (Trie.add args (Arity.pt res, name) pre);
+        | None => Some (Trie.add args (Frame.point face, op) Trie.empty)
+        | Some pre => Some (Trie.add args (Frame.point face, op) pre);
       Map.update theta update sigma.rules
     | _ => sigma.rules
   } [@warning "-4"];
