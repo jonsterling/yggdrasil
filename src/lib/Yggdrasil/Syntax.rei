@@ -1,4 +1,5 @@
 open Format;
+let module R = Data.Rose;
 
 let module Dimension: {
   type t = int [@@deriving (eq, ord, show)];
@@ -17,13 +18,13 @@ let module rec Bind: {
 }
 
 and Complex: {
-  type t = Data.Rose.Corolla.t Face.t [@@deriving (eq, ord)];
+  type t = R.Corolla.t Face.t [@@deriving (eq, ord)];
 }
 
 and Face: {
   type t =
-    | Ap Term.t
-    | Lam Telescope.t t
+    | Nest Term.t
+    | Lm Telescope.t t
     | Op Operator.t
     | Var Variable.t
     [@@deriving (eq, ord)];
@@ -50,7 +51,7 @@ and Telescope: {
 }
 
 and Term: {
-  type t = Data.Rose.t Face.t [@@deriving (eq, ord)];
+  type t = R.t Face.t [@@deriving (eq, ord)];
   let pp: Dimension.t => formatter => t => unit;
   let show: Dimension.t => t => string;
   let ap: t => Complex.t => t;

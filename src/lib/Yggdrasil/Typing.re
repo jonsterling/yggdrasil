@@ -51,9 +51,9 @@ and Inf: Sig.Inf = {
   let module rec Face: Sig.Inf.Face = {
     open S.Face;
     let rec arity sigma gamma tm => switch tm {
-      | Ap rho => Term.arity sigma gamma rho
+      | Nest rho => Term.arity sigma gamma rho
       | Op op => Computad.arity sigma op
-      | Lam xs e =>
+      | Lm xs e =>
         let dom0 = CCList.map snd xs;
         let R.Fork cod dom1 = arity sigma (Ctx.push gamma xs) e;
         R.Fork cod (dom0 @ dom1)
@@ -62,7 +62,7 @@ and Inf: Sig.Inf = {
     and subtract sigma gamma doms sp => switch (doms, sp) {
       | (doms, []) => doms
       | ([dom, ...doms], [tm, ...sp]) =>
-        let () = Chk.Face.arity sigma gamma (Ap tm) dom;
+        let () = Chk.Face.arity sigma gamma (Nest tm) dom;
         subtract sigma gamma doms sp
       | _ => assert false
       };

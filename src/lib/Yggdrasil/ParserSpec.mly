@@ -152,7 +152,7 @@ face_parens:
 {
   fun gamma ->
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
-    Face.Lam (telescope, face gamma)
+    Face.Lm (telescope, face gamma)
 }
   | face = operator_or_variable
   ; complex = nonempty_list(term)
@@ -180,7 +180,7 @@ term_parens:
 {
   fun gamma ->
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
-    [] --> Face.Lam (telescope, face gamma)
+    [] --> Face.Lm (telescope, face gamma)
 }
   | face = operator_or_variable
   ; complex = nonempty_list(term)

@@ -25,15 +25,15 @@ let module rec Bind: {
 }
 
 and Complex: {
-  type t = Data.Rose.Corolla.t Face.t [@@deriving (eq, ord)];
+  type t = R.Corolla.t Face.t [@@deriving (eq, ord)];
 } = {
-  type t = Data.Rose.Corolla.t Face.t [@@deriving (eq, ord)];
+  type t = R.Corolla.t Face.t [@@deriving (eq, ord)];
 }
 
 and Face: {
   type t =
-    | Ap Term.t
-    | Lam Telescope.t t
+    | Nest Term.t
+    | Lm Telescope.t t
     | Op Operator.t
     | Var Variable.t
   [@@deriving (eq, ord)];
@@ -44,20 +44,20 @@ and Face: {
   let op: Operator.t => t;
 } = {
   type t =
-    | Ap Term.t
-    | Lam Telescope.t t
+    | Nest Term.t
+    | Lm Telescope.t t
     | Op Operator.t
     | Var Variable.t
   [@@deriving (eq, ord)];
   let rec pp_node pp_rose fmt tm => switch tm {
-  | Ap rho =>
+  | Nest rho =>
       fprintf fmt "%a"
         (pp_rose) rho
-    | Lam [x] e =>
+    | Lm [x] e =>
       fprintf fmt "@[<2>(λ@ %a@ @[<2>%a@])@]"
         (Bind.pp) x
         (pp_node pp_rose) e
-    | Lam xs e =>
+    | Lm xs e =>
       let pp_sep fmt () => fprintf fmt "@ ";
       fprintf fmt "@[<2>(λ@ [%a]@ @[<2>%a@])@]"
         (pp_print_list pp_sep::pp_sep Bind.pp) xs
@@ -71,7 +71,7 @@ and Face: {
     };
   let pp dim => pp_node @@ Term.pp dim;
   let show dim => [%derive.show: t [@printer pp dim]];
-  let ap hd sp => Ap (R.Fork hd sp);
+  let ap hd sp => Nest (R.Fork hd sp);
   let op head => Op head;
 }
 
@@ -84,7 +84,7 @@ and Frame: {
   type t = Term.t;
   let equal = Term.equal;
   let compare = Term.compare;
-  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+  let rec pp dim fmt (R.Fork hd sp) => {
     let pp_sep fmt () => fprintf fmt "@ ";
     switch sp {
     | [] =>
@@ -101,7 +101,7 @@ and Frame: {
     }
   };
   let show dim => [%derive.show: Term.t [@printer pp dim]];
-  let point cod => Data.Rose.pure cod;
+  let point cod => R.pure cod;
 }
 
 and Niche: {
@@ -110,7 +110,7 @@ and Niche: {
   type t = Complex.t;
   let equal = Complex.equal;
   let compare = Complex.compare;
-  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+  let rec pp dim fmt (R.Fork hd sp) => {
     let pp_sep fmt () => fprintf fmt "@ ";
     switch sp {
     | [] =>
@@ -127,7 +127,7 @@ and Niche: {
     }
   };
   let show dim => [%derive.show: Term.t [@printer pp dim]];
-  let pt cod => Data.Rose.pure cod;
+  let pt cod => R.pure cod;
 }
 
 and Telescope: {
@@ -137,14 +137,14 @@ and Telescope: {
 }
 
 and Term: {
-  type t = Data.Rose.t Face.t [@@deriving (eq, ord)];
+  type t = R.t Face.t [@@deriving (eq, ord)];
   let pp: Dimension.t => formatter => t => unit;
   let show: Dimension.t => t => string;
   let ap: t => Complex.t => t;
   let op: Operator.t => Complex.t => t;
 } = {
-  type t = Data.Rose.t Face.t [@@deriving (eq, ord)];
-  let rec pp dim fmt (Data.Rose.Fork hd sp) => {
+  type t = R.t Face.t [@@deriving (eq, ord)];
+  let rec pp dim fmt (R.Fork hd sp) => {
     let pp_sep fmt () => fprintf fmt "@ ";
     switch sp {
     | [] => fprintf fmt "%a" (Face.pp dim) hd
@@ -159,7 +159,7 @@ and Term: {
     }
   };
   let show dim => [%derive.show: t [@printer pp dim]];
-  let ap head spine => R.Fork (Face.Ap head) spine;
+  let ap head spine => R.Fork (Face.Nest head) spine;
   let op head spine => R.Fork (Face.Op head) spine;
 };
 
@@ -170,7 +170,7 @@ let module Cell = {
   } [@@deriving (eq, ord)];
 };
 
-let (*@) head spine => Face.Ap (R.Fork head spine);
+let (*@) head spine => Face.Nest (R.Fork head spine);
 let (-->) dom cod => R.Fork cod dom;
 let (<:) op frame => { Cell.op, frame };
 let (<!) op face => { Cell.op, frame: Frame.point face };
