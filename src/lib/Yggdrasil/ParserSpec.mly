@@ -152,12 +152,12 @@ node_parens:
   ; body = node
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ List.map fst binds in
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst binds in
     Node.Lm (binds, body gamma)
 }
   | node = operator_or_variable
   ; spine = nonempty_list(rose)
-{ fun gamma -> node gamma *@ List.map ((|>) gamma) spine }
+{ fun gamma -> node gamma *@ CCList.map ((|>) gamma) spine }
   ;
 
 operator_or_variable:
@@ -180,12 +180,12 @@ rose_parens:
   ; body = node
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ List.map fst binds in
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst binds in
     [] --> Node.Lm (binds, body gamma)
 }
   | node = operator_or_variable
   ; spine = nonempty_list(rose)
-{ fun gamma -> List.map ((|>) gamma) spine --> node gamma }
+{ fun gamma -> CCList.map ((|>) gamma) spine --> node gamma }
   ;
 
 sign:

@@ -55,7 +55,7 @@ and Inf: S.Inf = {
       | Ap rho => Rose.arity sigma gamma rho
       | Op op => Computad.arity sigma op
       | Lm xs e =>
-        let dom0 = List.map snd xs;
+        let dom0 = CCList.map snd xs;
         let Fork cod dom1 = arity sigma (Ctx.push gamma xs) e;
         Fork cod (dom0 @ dom1)
       | Var x => Ctx.arity gamma x
