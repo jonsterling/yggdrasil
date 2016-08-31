@@ -16,7 +16,7 @@ YGGDRASIL=bin/yggdrasil
 
 .PHONY: all clean examples install lib-byte lib-native links preinstall tests tools top
 
-all: lib-byte lib-native links tools
+all: lib-native links tools
 
 bin:
 	@${MKDIR} bin
