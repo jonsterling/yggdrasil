@@ -15,9 +15,13 @@ let module Term: {
 
   let module rec Bind: {
     type t = (Variable.t, Rose.t) [@@deriving (eq, ord, show)];
-  } and Bouquet: {
+  }
+
+  and Bouquet: {
     type t = Data.Rose.Bouquet.t Node.t [@@deriving (eq, ord)];
-  } and Node: {
+  }
+
+  and Node: {
     type t =
       | Ap Rose.t
       | Lm (list Bind.t) t
@@ -25,11 +29,13 @@ let module Term: {
       | Var Variable.t
       [@@deriving (eq, ord)];
     let pp: Dimension.t => formatter => t => unit;
+    let pp_node: (formatter => Rose.t => unit) => (formatter => Node.t => unit);
     let show: Dimension.t => t => string;
-    let node: (formatter => Rose.t => unit) => (formatter => Node.t => unit);
     let ap: Node.t => Bouquet.t => t;
     let op: Operator.t => t;
-  } and Rose: {
+  }
+
+  and Rose: {
     type t = Data.Rose.t Node.t [@@deriving (eq, ord)];
     let pp: Dimension.t => formatter => t => unit;
     let show: Dimension.t => t => string;

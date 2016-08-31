@@ -15,9 +15,9 @@ let act_parse file_name =
       handler @@ M.resume chk
     | M.Accepted computad ->
       let buf = Buffer.create 0 in
-      let ppf = formatter_of_buffer buf in
-      let () = Computad.pp ppf computad in
-      let () = pp_print_flush ppf () in
+      let fmt = formatter_of_buffer buf in
+      let () = Computad.pp fmt computad in
+      let () = pp_print_flush fmt () in
       Lwt_io.printl @@ Buffer.contents buf
     | M.HandlingError _ ->
       let msg = "parser :: handling error" in

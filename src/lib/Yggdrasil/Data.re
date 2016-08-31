@@ -52,15 +52,9 @@ let module Rose = {
     fprintf fmt "@]]@]"
   };
 
-  let show_poly pp_t pp_elem rose => {
-    let buffer = Buffer.create 0;
-    let fmt = formatter_of_buffer buffer;
-    pp_t pp_elem fmt rose;
-    pp_print_flush fmt ();
-    Buffer.contents buffer
-  };
+  let show_poly pp_t pp_elem => [%derive.show: t 'a [@printer pp_t pp_elem]];
 
-  let show pp_elem => show_poly pp pp_elem;
+  let show pp_elem => [%derive.show: t 'a [@printer pp pp_elem]];
 
   let module Bouquet = {
     type nonrec t 'a = list (Def.t 'a);

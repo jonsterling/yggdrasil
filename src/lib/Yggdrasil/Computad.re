@@ -137,13 +137,7 @@ let pp fmt computad => {
   fprintf fmt "@]";
 };
 
-let show computad => {
-  let buffer = Buffer.create 0;
-  let fmt = formatter_of_buffer buffer;
-  pp fmt computad;
-  pp_print_flush fmt ();
-  Buffer.contents buffer;
-};
+let show = [%derive.show: t [@printer pp]];
 
 let empty = {
   cells: Map.empty,
