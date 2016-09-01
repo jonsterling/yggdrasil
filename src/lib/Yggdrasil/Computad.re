@@ -1,6 +1,8 @@
 open Format;
 open Syntax;
 
+let module R = Data.Rose;
+
 module type Sig = {
   type t [@@deriving show];
   let empty: t;
@@ -140,11 +142,10 @@ let empty = {
 };
 
 let bind sigma dim { Cell.op, frame } => {
-  open Data.Rose;
   let cells = Map.add op frame sigma.cells;
   let dimensions = Map.add op dim sigma.dimensions;
   let rules = switch frame {
-    | Fork face [Fork (Face.Op theta) args] when dim > 1 =>
+    | R.Fork { Scoped.face, _ } [R.Fork { Scoped.face: Face.Op theta, _ } args] when dim > 1 =>
       let update = fun
         | None => Some (Trie.add args (Frame.point face, op) Trie.empty)
         | Some pre => Some (Trie.add args (Frame.point face, op) pre);

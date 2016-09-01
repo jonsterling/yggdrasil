@@ -2,6 +2,7 @@
 [@@@warning "-9"]
 open Format
 open Syntax
+module R = Data.Rose
 
 module Ctx = CCSet.Make(struct
   type t = Operator.t
@@ -28,8 +29,8 @@ end)
 %type <Frame.t> frame
 %type <Niche.t> frame_niche
 %type <Face.t> frame_face
-%type <Bind.t> bind
-%type <Telescope.t> telescope
+%type <Bind.Term.t> bind
+%type <Telescope.Term.t> telescope
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> cell
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> computad_item
 %type <Ctx.t -> Face.t> face
@@ -49,25 +50,39 @@ frame:
   ; niche = frame_niche
   ; face = frame_face
   ; RIGHT_PARENTHESIS
-{ niche --> face }
+{
+  let tele = [] in
+  let scoped = { Scoped.tele; face } in
+  R.Fork (scoped, niche)
+}
   | face = frame_face
-{ Frame.point face }
+{
+  Frame.point face
+}
   ;
 
 frame_niche:
   | LEFT_SQUARE_BRACKET
   ; niche = list(frame)
   ; RIGHT_SQUARE_BRACKET
-{ niche }
+{
+  niche
+}
   | frame = frame
-{ frame :: [] }
+{
+  frame :: []
+}
   ;
 
 frame_face:
   | KEYWORD_TYPE
-{ Builtin.star }
+{
+  Builtin.star
+}
   | face = face
-{ face Ctx.empty }
+{
+  face Ctx.empty
+}
   ;
 
 bind:
@@ -76,16 +91,22 @@ bind:
   ; var = IDENTIFIER
   ; frame = frame
   ; RIGHT_PARENTHESIS
-{ (var, frame) }
+{
+  (var, frame)
+}
   ;
 
 telescope:
   | bind = bind
-{ bind :: [] }
+{
+  bind :: []
+}
   | LEFT_SQUARE_BRACKET
   ; telescope = list(bind)
   ; RIGHT_SQUARE_BRACKET
-{ telescope }
+{
+  telescope
+}
   ;
 
 cell:
@@ -116,7 +137,9 @@ computad:
 
 computad_item:
   | sign = sign
-{ sign }
+{
+  sign
+}
   | LEFT_PARENTHESIS
   ; KEYWORD_ANALYZE
   ; face = face
@@ -138,53 +161,80 @@ computad_item:
 
 face:
   | face = operator_or_variable
-{ face }
+{
+  face
+}
   | LEFT_PARENTHESIS
   ; face = face_parens
   ; RIGHT_PARENTHESIS
-{ face }
+{
+  face
+}
   ;
 
 face_parens:
   | KEYWORD_LAMBDA
-  ; telescope = telescope
+  ; tele = telescope
   ; face = face
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
-    Face.Lm (telescope, face gamma)
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
+    Face.Lm ([], tele, face gamma)
 }
   | face = operator_or_variable
   ; complex = nonempty_list(term)
-{ fun gamma -> face gamma *@ CCList.map ((|>) gamma) complex }
+{
+  fun gamma ->
+    face gamma *@ CCList.map ((|>) gamma) complex
+}
   ;
 
 operator_or_variable:
   | id = IDENTIFIER
-{ fun gamma -> if Ctx.mem id gamma then Face.Var id else Face.Op id }
+{
+  fun gamma ->
+    if Ctx.mem id gamma then
+      Face.VarT id
+    else
+      Face.Op id
+}
   ;
 
 term:
   | face = operator_or_variable
-{ fun gamma -> [] --> face gamma }
+{
+  fun gamma ->
+    let tele = [] in
+    let face = face gamma in
+    let scoped = { Scoped.tele; face } in
+    R.Fork (scoped, [])
+}
   | LEFT_PARENTHESIS
   ; term = term_parens
   ; RIGHT_PARENTHESIS
-{ term }
+{
+  term
+}
   ;
 
 term_parens:
   | KEYWORD_LAMBDA
-  ; telescope = telescope
+  ; tele = telescope
   ; face = face
 {
   fun gamma ->
-    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst telescope in
-    [] --> Face.Lm (telescope, face gamma)
+    let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
+    [] --> Face.Lm ([], tele, face gamma)
 }
   | face = operator_or_variable
   ; complex = nonempty_list(term)
-{ fun gamma -> CCList.map ((|>) gamma) complex --> face gamma }
+{
+  fun gamma ->
+    let tele = [] in
+    let face = face gamma in
+    let scoped = { Scoped.tele; face } in
+    R.Fork (scoped, CCList.map ((|>) gamma) complex)
+}
   ;
 
 sign:

@@ -10,23 +10,34 @@ let module Operator: {
 };
 
 let module Variable: {
-  type t = string [@@deriving (eq, ord, show)];
+  let module Meta: {
+    type t = string [@@deriving (eq, ord, show)];
+  };
+  let module Term: {
+    type t = string [@@deriving (eq, ord, show)];
+  };
 };
 
 let module rec Bind: {
-  type t = (Variable.t, Frame.t) [@@deriving (eq, ord, show)];
+  let module Meta: {
+    type t = (Variable.Meta.t, Frame.t) [@@deriving (eq, ord, show)];
+  };
+  let module Term: {
+    type t = (Variable.Term.t, Frame.t) [@@deriving (eq, ord, show)];
+  };
 }
 
 and Complex: {
-  type t = R.Corolla.t Face.t [@@deriving (eq, ord)];
+  type t = R.Corolla.t Scoped.t [@@deriving (eq, ord)];
 }
 
 and Face: {
   type t =
-    | Nest Term.t
-    | Lm Telescope.t t
+    | Lm Telescope.Meta.t Telescope.Term.t t
     | Op Operator.t
-    | Var Variable.t
+    | Tm Term.t
+    | VarM Variable.Meta.t
+    | VarT Variable.Term.t
     [@@deriving (eq, ord)];
   let pp: Dimension.t => formatter => t => unit;
   let pp_node: (formatter => Term.t => unit) => (formatter => t => unit);
@@ -46,12 +57,24 @@ and Niche: {
   type t = Complex.t [@@deriving (eq, ord)];
 }
 
+and Scoped: {
+  type t = {
+    tele: Telescope.Meta.t,
+    face: Face.t,
+  };
+}
+
 and Telescope: {
-  type t = list Bind.t [@@deriving (eq, ord)];
+  let module Meta: {
+    type t = list Bind.Meta.t [@@deriving (eq, ord)];
+  };
+  let module Term: {
+    type t = list Bind.Term.t [@@deriving (eq, ord)];
+  };
 }
 
 and Term: {
-  type t = R.t Face.t [@@deriving (eq, ord)];
+  type t = R.t Scoped.t [@@deriving (eq, ord)];
   let pp: Dimension.t => formatter => t => unit;
   let show: Dimension.t => t => string;
   let ap: t => Complex.t => t;
