@@ -27,8 +27,6 @@ end)
 %token RIGHT_SQUARE_BRACKET
 
 %type <Frame.t> frame
-%type <Niche.t> frame_niche
-%type <Face.t> frame_face
 %type <Bind.Term.t> bind
 %type <Telescope.Term.t> telescope
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> cell
@@ -44,92 +42,58 @@ end)
 
 %%
 
+%inline single_or_delimited(LHS, RULE, RHS):
+  | result = delimited(LHS, list(RULE), RHS)
+{ result }
+  | result = RULE
+{ result :: [] }
+  ;
+
+%inline parens(X):
+  | result = delimited(LEFT_PARENTHESIS, X, RIGHT_PARENTHESIS)
+{ result }
+
+%inline single_or_squares(X):
+  | result = single_or_delimited(LEFT_SQUARE_BRACKET, X, RIGHT_SQUARE_BRACKET)
+{ result }
+
 frame:
-  | LEFT_PARENTHESIS
-  ; KEYWORD_ARITY
-  ; niche = frame_niche
-  ; face = frame_face
-  ; RIGHT_PARENTHESIS
+  | result = parens(pair(preceded(KEYWORD_ARITY, single_or_squares(frame)), face))
 {
+  let (niche, face) = result in
   let tele = [] in
+  let face = face Ctx.empty in
   let scoped = { Scoped.tele; face } in
   R.Fork (scoped, niche)
 }
-  | face = frame_face
-{
-  Frame.point face
-}
-  ;
-
-frame_niche:
-  | LEFT_SQUARE_BRACKET
-  ; niche = list(frame)
-  ; RIGHT_SQUARE_BRACKET
-{
-  niche
-}
-  | frame = frame
-{
-  frame :: []
-}
-  ;
-
-frame_face:
-  | KEYWORD_TYPE
-{
-  Builtin.star
-}
   | face = face
-{
-  face Ctx.empty
-}
+{ Frame.point @@ face Ctx.empty }
   ;
 
 bind:
-  | LEFT_PARENTHESIS
-  ; KEYWORD_CELL
-  ; var = IDENTIFIER
-  ; frame = frame
-  ; RIGHT_PARENTHESIS
-{
-  (var, frame)
-}
+  | bind = parens(preceded(KEYWORD_CELL, pair(IDENTIFIER, frame)))
+{ bind }
   ;
 
 telescope:
-  | bind = bind
-{
-  bind :: []
-}
-  | LEFT_SQUARE_BRACKET
-  ; telescope = list(bind)
-  ; RIGHT_SQUARE_BRACKET
-{
-  telescope
-}
+  | tele = single_or_squares(bind)
+{ tele }
   ;
 
 cell:
-  | LEFT_PARENTHESIS
-  ; KEYWORD_CELL
-  ; op = IDENTIFIER
-  ; frame = frame
-  ; RIGHT_PARENTHESIS
+  | result = parens(preceded(KEYWORD_CELL, pair(IDENTIFIER, frame)))
 {
   fun (sigma, i) ->
+    let (op, frame) = result in
     let sigma = Computad.bind sigma i (op <: frame) in
     (sigma, i)
 }
   ;
 
 computad:
-  | LEFT_PARENTHESIS
-  ; KEYWORD_COMPUTAD
-  ; IDENTIFIER
-  ; items = list(computad_item)
-  ; RIGHT_PARENTHESIS
-  ; EOF
+  | result = terminated(parens(preceded(KEYWORD_COMPUTAD, pair(IDENTIFIER, list(computad_item)))), EOF)
 {
+  let (_, items) = result in
   let (sigma, _) = List.fold_left (|>) (Computad.empty, 0) items in
   M.pure sigma
 }
@@ -137,13 +101,8 @@ computad:
 
 computad_item:
   | sign = sign
-{
-  sign
-}
-  | LEFT_PARENTHESIS
-  ; KEYWORD_ANALYZE
-  ; face = face
-  ; RIGHT_PARENTHESIS
+{ sign }
+  | face = parens(preceded(KEYWORD_ANALYZE, face))
 {
   fun sigma ->
     let module T = Typing in
@@ -161,43 +120,32 @@ computad_item:
 
 face:
   | face = operator_or_variable
-{
-  face
-}
-  | LEFT_PARENTHESIS
-  ; face = face_parens
-  ; RIGHT_PARENTHESIS
-{
-  face
-}
+{ face }
+  | KEYWORD_TYPE
+{ fun _ -> Builtin.star }
+  | face = parens(face_parens)
+{ face }
   ;
 
 face_parens:
-  | KEYWORD_LAMBDA
-  ; tele = telescope
-  ; face = face
+  | result = preceded(KEYWORD_LAMBDA, pair(telescope, face))
 {
   fun gamma ->
+    let (tele, face) = result in
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
     Face.Lm ([], tele, face gamma)
 }
-  | face = operator_or_variable
-  ; complex = nonempty_list(term)
+  | result = pair(operator_or_variable, nonempty_list(term))
 {
   fun gamma ->
+    let (face, complex) = result in
     face gamma *@ CCList.map ((|>) gamma) complex
 }
   ;
 
 operator_or_variable:
   | id = IDENTIFIER
-{
-  fun gamma ->
-    if Ctx.mem id gamma then
-      Face.VarT id
-    else
-      Face.Op id
-}
+{ fun gamma -> if Ctx.mem id gamma then Face.VarT id else Face.Op id }
   ;
 
 term:
@@ -209,27 +157,22 @@ term:
     let scoped = { Scoped.tele; face } in
     R.Fork (scoped, [])
 }
-  | LEFT_PARENTHESIS
-  ; term = term_parens
-  ; RIGHT_PARENTHESIS
-{
-  term
-}
+  | term = parens(term_parens)
+{ term }
   ;
 
 term_parens:
-  | KEYWORD_LAMBDA
-  ; tele = telescope
-  ; face = face
+  | result = preceded(KEYWORD_LAMBDA, pair(telescope, face))
 {
   fun gamma ->
+    let (tele, face) = result in
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
     [] --> Face.Lm ([], tele, face gamma)
 }
-  | face = operator_or_variable
-  ; complex = nonempty_list(term)
+  | result = pair(operator_or_variable, nonempty_list(term))
 {
   fun gamma ->
+    let (face, complex) = result in
     let tele = [] in
     let face = face gamma in
     let scoped = { Scoped.tele; face } in
@@ -238,13 +181,10 @@ term_parens:
   ;
 
 sign:
-  | LEFT_PARENTHESIS
-  ; KEYWORD_SIGN
-  ; IDENTIFIER
-  ; cells = list(cell)
-  ; RIGHT_PARENTHESIS
+  | result = parens(preceded(KEYWORD_SIGN, pair(IDENTIFIER, list(cell))))
 {
   fun (sigma, i) ->
+    let (_, cells) = result in
     let (sigma, i) = List.fold_left (|>) (sigma, i) cells in
     (sigma, i + 1)
 }
