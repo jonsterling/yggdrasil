@@ -22,7 +22,7 @@ bin:
 	@${MKDIR} bin
 
 bin/yggdrasil: bin
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil src/tools/yggdrasil/Main.native
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil src/tools/yggdrasil/Main.native 2>&1 | refmterr
 	@${SYMLINK} ${BUILD_DIR}/src/tools/yggdrasil/Main.native bin/yggdrasil
 
 clean:
@@ -46,10 +46,10 @@ install: preinstall
 	@echo "* run './bin/yggdrasil help' for details"
 
 lib-byte:
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma 2>&1 | refmterr
 
 lib-native:
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa 2>&1 | refmterr
 
 links: bin/yggdrasil
 
