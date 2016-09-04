@@ -66,4 +66,4 @@ test: all examples
 tools: bin/yggdrasil
 
 top: lib-byte
-	@rtop
+	@utop
