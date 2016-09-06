@@ -73,6 +73,7 @@ let module Machine: {
     clo: Clo.t,
     ctx: Zip.t Clo.t,
   };
+  let pp: formatter => t => unit;
   let step: t => t;
   let into: Syntax.Term.t => t;
 };

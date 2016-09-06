@@ -194,10 +194,14 @@ let module Machine = {
   open Syntax.Sub;
   open Syntax.Term;
 
-  let step state => {
-    fprintf std_formatter "@[<v>ctx:@[<v -2>@,%a@]@,clo:@[<v -2>@,%a@]@]@."
+  let pp fmt state => {
+    fprintf fmt "@[<v>ctx:@[<v -2>@,%a@]@,clo:@[<v -2>@,%a@]@]@."
       (Pretty.Zip.pp Pretty.Clo.pp (Pretty.Env.mk ()) 0) state.ctx
                     (Pretty.Clo.pp (Pretty.Env.mk ()) 0) state.clo;
+  };
+
+  let step state => {
+    pp std_formatter state;
     switch state {
     /* left */
     | { clo: Clo (App e0 e1) sgm, ctx } =>
