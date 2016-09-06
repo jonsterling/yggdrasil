@@ -79,5 +79,6 @@ let module Machine: {
 };
 
 let module Run: {
-  let step: unit => unit;
+  type stepFun = unit => unit;
+  let init: unit => stepFun;
 };

@@ -198,11 +198,10 @@ let module Machine = {
   };
 
   let step state => {
-    pp std_formatter state;
-    switch state {
     open Clo;
     open Syntax.Sub;
     open Syntax.Term;
+    let state = switch state {
     /* left */
     | { clo: Clo (App e0 e1) sgm, ctx } =>
       let clo = Clo e0 sgm;
@@ -239,6 +238,8 @@ let module Machine = {
       { clo, ctx }
     | _ => failwith "bad state"
     } [@warning "-4"];
+    pp std_formatter state;
+    state;
   };
 
   let into e => {
@@ -268,8 +269,13 @@ let module Test = {
 };
 
 let module Run = {
-  let state = ref (Machine.into Test.init);
-  let step () => {
-    state := Machine.step !state;
+  type stepFun = unit => unit;
+  let init () => {
+    let state = ref (Machine.into Test.init);
+    let () = Machine.pp std_formatter !state;
+    let step () => {
+      state := Machine.step !state;
+    };
+    step;
   };
 };
