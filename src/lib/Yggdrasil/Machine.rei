@@ -1,5 +1,9 @@
 open Format;
 
+let module Endo: {
+  type t 'a = 'a => 'a;
+};
+
 let module Syntax: {
   let module Var: {
     type t = int;
@@ -18,22 +22,28 @@ let module Syntax: {
       | Id
       | Shift
       ;
-    let sub: Term.t => t Term.t => Term.t;
+    let map: ('a => 'b) => (t 'a => t 'b);
+    let apply: t Term.t => Endo.t Term.t;
   };
 };
 
 let module Zip: {
+  open Syntax;
   type t 'a =
     | App0 (t 'a) 'a
     | App1 'a (t 'a)
     | Halt
     | Lam (t 'a)
     ;
+  let map: ('a => 'b) => (t 'a => t 'b);
+  let apply: t Term.t => Endo.t Term.t;
 };
 
 let module Clo: {
+  open Syntax;
   type t =
-    | Clo Syntax.Term.t (Syntax.Sub.t t);
+    | Clo Term.t (Sub.t t);
+  let from: t => Term.t;
 };
 
 let module Pretty: {
@@ -69,16 +79,19 @@ let module Pretty: {
 };
 
 let module Machine: {
+  open Syntax;
   type t = {
     clo: Clo.t,
     ctx: Zip.t Clo.t,
   };
-  let pp: formatter => t => unit;
+  let into: Term.t => t;
+  let from: t => Term.t;
+  let pp: formatter => string => t => unit;
+  let halted: t => bool;
   let step: t => t;
-  let into: Syntax.Term.t => t;
+  let norm: Syntax.Term.t => Syntax.Term.t;
 };
 
 let module Run: {
-  type stepFun = unit => unit;
-  let init: unit => stepFun;
+  let go: unit => Syntax.Term.t;
 };

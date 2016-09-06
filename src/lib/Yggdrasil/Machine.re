@@ -1,5 +1,9 @@
 open Format;
 
+let module Endo = {
+  type t 'a = 'a => 'a;
+};
+
 let module Syntax = {
   let module Var = {
     type t = int;
@@ -18,31 +22,62 @@ let module Syntax = {
       | Id
       | Shift
       ;
-    let rec sub e sgm =>
-      switch (e, sgm) {
-      | (Term.App e0 e1, sgm) => Term.App (sub e0 sgm) (sub e1 sgm)
-      | (Term.Lam e, sgm) => Term.Lam (sub e (Dot (Term.Var 0) (Cmp sgm Shift)))
-      | (Term.Var 0, Dot e _) => e
-      | (Term.Var i, Dot _ sgm) => sub (Term.Var (i - 1)) sgm
-      | (Term.Var i, Id) => Term.Var i
-      | (Term.Var i, Shift) => Term.Var (i + 1)
-      | (e, Cmp rho sgm) => sub (sub e rho) sgm
+
+    let map f sgm => {
+      let rec go = fun
+      | Cmp sgm0 sgm1 => Cmp (go sgm0) (go sgm1)
+      | Dot a sgm => Dot (f a) (go sgm)
+      | Id => Id
+      | Shift => Shift
+      ;
+      go sgm;
+    };
+
+    let rec apply sgm e =>
+      switch (sgm, e) {
+      | (sgm, Term.App e0 e1) => Term.App (apply sgm e0) (apply sgm e1)
+      | (sgm, Term.Lam e) => Term.Lam (apply (Dot (Term.Var 0) (Cmp sgm Shift)) e)
+      | (Dot e _, Term.Var 0) => e
+      | (Dot _ sgm, Term.Var i) => apply sgm (Term.Var (i - 1))
+      | (Id, Term.Var i) => Term.Var i
+      | (Shift, Term.Var i) => Term.Var (i + 1)
+      | (Cmp rho sgm, e) => apply sgm (apply rho e)
       };
   };
 };
 
 let module Zip = {
+  open Syntax;
   type t 'a =
     | App0 (t 'a) 'a
     | App1 'a (t 'a)
     | Halt
     | Lam (t 'a)
     ;
+
+  let map f sgm => {
+    let rec go = fun
+    | App0 zip e1 => App0 (go zip) (f e1)
+    | App1 e0 zip => App1 (f e0) (go zip)
+    | Halt => Halt
+    | Lam zip => Lam (go zip)
+    ;
+    go sgm;
+  };
+
+  let rec apply zip acc => switch zip {
+    | App0 zip e1 => apply zip (Term.App acc e1)
+    | App1 e0 zip => apply zip (Term.App e0 acc)
+    | Halt => acc
+    | Lam zip => apply zip (Term.Lam acc)
+  };
 };
 
 let module Clo = {
+  open Syntax;
   type t =
-    | Clo Syntax.Term.t (Syntax.Sub.t t);
+    | Clo Term.t (Sub.t t);
+  let rec from (Clo term sgm) => Sub.apply (Sub.map from sgm) term;
 };
 
 let module Pretty = {
@@ -54,8 +89,8 @@ let module Pretty = {
     type t = int;
     open Syntax.Term;
     let calc = fun
-      | App _ _ => 0
-      | Lam _ => 1
+      | App _ _ => 1
+      | Lam _ => 2
       | Var _ => 0
       ;
   };
@@ -117,8 +152,8 @@ let module Pretty = {
       | App e0 e1 =>
         fprintf fmt "@[%a%a@ %a%a@]"
           (Delim.pp prev next) "("
-          (pp env next) e0
-          (pp env next) e1
+          (pp env 1) e0
+          (pp env 0) e1
           (Delim.pp prev next) ")"
       | Lam e =>
         let name = Stream.next rest;
@@ -191,63 +226,99 @@ let module Machine = {
     ctx: Zip.t Clo.t,
   };
 
-  let pp fmt state => {
-    fprintf fmt "@[<v>ctx:@[<v -2>@,%a@]@,clo:@[<v -2>@,%a@]@]@."
-      (Pretty.Zip.pp Pretty.Clo.pp (Pretty.Env.mk ()) 0) state.ctx
-                    (Pretty.Clo.pp (Pretty.Env.mk ()) 0) state.clo;
-  };
-
-  let step state => {
-    open Clo;
-    open Syntax.Sub;
-    open Syntax.Term;
-    let state = switch state {
-    /* left */
-    | { clo: Clo (App e0 e1) sgm, ctx } =>
-      let clo = Clo e0 sgm;
-      let ctx = Zip.App0 ctx (Clo e1 sgm);
-      { clo, ctx }
-    /* beta */
-    | { clo: Clo (Lam e) sgm, ctx: Zip.App0 ctx c0 } =>
-      let clo = Clo e (Cmp (Dot c0 sgm) Id);
-      { clo, ctx }
-    /* lambda */
-    | { clo: Clo (Lam e) sgm, ctx } =>
-      let clo = Clo e (Cmp (Dot (Clo (Var 0) Id) (Cmp sgm Shift)) Id);
-      let ctx = Zip.Lam ctx;
-      { clo, ctx }
-    /* associate */
-    | { clo: Clo (Var n) (Cmp (Cmp pi rho) sgm), ctx } =>
-      let clo = Clo (Var n) (Cmp pi (Cmp rho sgm));
-      { clo, ctx }
-    /* head */
-    | { clo: Clo (Var 0) (Cmp (Dot (Clo e pi) _) sgm), ctx } =>
-      let clo = Clo e (Cmp pi sgm);
-      { clo, ctx }
-    /* tail */
-    | { clo: Clo (Var n) (Cmp (Dot (Clo _ _) rho) sgm), ctx } =>
-      let clo = Clo (Var (n - 1)) (Cmp rho sgm);
-      { clo, ctx }
-    /* shift */
-    | { clo: Clo (Var n) (Cmp Shift sgm), ctx } =>
-      let clo = Clo (Var (n + 1)) sgm;
-      { clo, ctx }
-    /* id */
-    | { clo: Clo (Var n) (Cmp Id sgm), ctx } =>
-      let clo = Clo (Var n) sgm;
-      { clo, ctx }
-    | _ => failwith "bad state"
-    } [@warning "-4"];
-    pp std_formatter state;
-    state;
-  };
-
   let into e => {
     open Clo;
     open Syntax.Sub;
     let clo = Clo e Id;
     let ctx = Zip.Halt;
     { clo, ctx }
+  };
+
+  let from { clo, ctx } => Zip.apply (Zip.map Clo.from ctx) (Clo.from clo);
+
+  let pp fmt rule state => {
+    fprintf fmt "@[<v>ctx  ::@[<v -5>@,%a@]@,clo  ::@[<v -5>@,%a@]@,rule ::@[<v -5>@,%a@]@,term ::@[<v -5>@,%a@]@]@."
+      (Pretty.Zip.pp Pretty.Clo.pp (Pretty.Env.mk ()) 2) state.ctx
+                    (Pretty.Clo.pp (Pretty.Env.mk ()) 2) state.clo
+                                       (pp_print_string) rule
+                   (Pretty.Term.pp (Pretty.Env.mk ()) 2) (from state)
+  };
+
+  let halted state => {
+    open Clo;
+    open Syntax.Sub;
+    open Syntax.Term;
+    switch state {
+    | { clo: Clo (Var _) Id, _ } => true
+    | _ => false
+    } [@warning "-4"];
+  };
+
+  let step state => {
+    open Clo;
+    open Syntax.Sub;
+    open Syntax.Term;
+    let rule = ref "";
+    let state = switch state {
+    /* left */
+    | { clo: Clo (App e0 e1) sgm, ctx } =>
+      let clo = Clo e0 sgm;
+      let ctx = Zip.App0 ctx (Clo e1 sgm);
+      rule := "LEFT";
+      { clo, ctx };
+    /* beta */
+    | { clo: Clo (Lam e) sgm, ctx: Zip.App0 ctx c0 } =>
+      let clo = Clo e (Cmp (Dot c0 sgm) Id);
+      rule := "BETA";
+      { clo, ctx };
+    /* lambda */
+    | { clo: Clo (Lam e) sgm, ctx } =>
+      let clo = Clo e (Cmp (Dot (Clo (Var 0) Id) (Cmp sgm Shift)) Id);
+      let ctx = Zip.Lam ctx;
+      rule := "LAMBDA";
+      { clo, ctx };
+    /* associate */
+    | { clo: Clo (Var n) (Cmp (Cmp pi rho) sgm), ctx } =>
+      let clo = Clo (Var n) (Cmp pi (Cmp rho sgm));
+      rule := "ASSOCIATE";
+      { clo, ctx };
+    /* head */
+    | { clo: Clo (Var 0) (Cmp (Dot (Clo e pi) _) sgm), ctx } =>
+      let clo = Clo e (Cmp pi sgm);
+      rule := "HEAD";
+      { clo, ctx };
+    /* tail */
+    | { clo: Clo (Var n) (Cmp (Dot (Clo _ _) rho) sgm), ctx } =>
+      let clo = Clo (Var (n - 1)) (Cmp rho sgm);
+      rule := "TAIL";
+      { clo, ctx };
+    /* shift */
+    | { clo: Clo (Var n) (Cmp Shift sgm), ctx } =>
+      let clo = Clo (Var (n + 1)) sgm;
+      rule := "SHIFT";
+      { clo, ctx };
+    /* id */
+    | { clo: Clo (Var n) (Cmp Id sgm), ctx } =>
+      let clo = Clo (Var n) sgm;
+      rule := "ID";
+      { clo, ctx };
+    | _ =>
+      pp std_formatter !rule state;
+      failwith "bad state";
+    } [@warning "-4"];
+    pp std_formatter !rule state;
+    state;
+  };
+
+  let norm e => {
+    let count = ref 0;
+    let state = ref (into e);
+    while (not (halted !state)) {
+      fprintf std_formatter "@\n--- step[%d] ---@\n" !count;
+      incr count;
+      state := step !state;
+    };
+    from !state;
   };
 };
 
@@ -269,13 +340,5 @@ let module Test = {
 };
 
 let module Run = {
-  type stepFun = unit => unit;
-  let init () => {
-    let state = ref (Machine.into Test.init);
-    let () = Machine.pp std_formatter !state;
-    let step () => {
-      state := Machine.step !state;
-    };
-    step;
-  };
+  let go () => Machine.norm Test.init;
 };
