@@ -45,37 +45,7 @@ let module Clo = {
     | Clo Syntax.Term.t (Syntax.Sub.t t);
 };
 
-let module Pretty: {
-  let module Delim: {
-    type t;
-  };
-  let module Prec: {
-    type t = int;
-  };
-  let module Name: {
-    type t;
-    let gen: unit => int => option string;
-  };
-  let module Env: {
-    type t;
-    let mk: unit => t;
-  };
-
-  type printer 'a = Env.t => Prec.t => formatter => 'a => unit;
-
-  let module Term: {
-    let pp: printer Syntax.Term.t;
-  };
-  let module Sub: {
-    let pp: printer 'a => printer (Syntax.Sub.t 'a);
-  };
-  let module Clo: {
-    let pp: printer Clo.t;
-  };
-  let module Zip: {
-    let pp: printer 'a => printer (Zip.t 'a);
-  };
-} = {
+let module Pretty = {
   let module Delim = {
     type t = string;
     let pp prev next fmt token => if (prev < next) { fprintf fmt "%s" token };
@@ -141,22 +111,22 @@ let module Pretty: {
 
   let module Term = {
     open Syntax.Term;
-    let rec pp ({ Env.used: used, rest } as env) prev fmt term => {
-      let next = Prec.calc term;
-      switch term {
-      | App term0 term1 =>
+    let rec pp ({ Env.used: used, rest } as env) prev fmt e => {
+      let next = Prec.calc e;
+      switch e {
+      | App e0 e1 =>
         fprintf fmt "@[%a%a@ %a%a@]"
           (Delim.pp prev next) "("
-          (pp env next) term0
-          (pp env next) term1
+          (pp env next) e0
+          (pp env next) e1
           (Delim.pp prev next) ")"
-      | Lam term =>
+      | Lam e =>
         let name = Stream.next rest;
         let env = { ...env, Env.used: [name, ...used] };
         fprintf fmt "%aλ%a.%a%a"
           (Delim.pp prev next) "("
           (pp_print_string) name
-          (pp env next) term
+          (pp env next) e
           (Delim.pp prev next) ")"
       | Var index =>
         fprintf fmt "%s" @@ try (List.nth used index) {
@@ -173,9 +143,9 @@ let module Pretty: {
       fprintf fmt "@[%a;@ %a@]"
         (pp pp_elem env prev) sgm1
         (pp pp_elem env prev) sgm0
-    | Dot term sgm =>
+    | Dot e sgm =>
       fprintf fmt "@[%a@ ·@ %a@]"
-        (pp_elem env prev) term
+        (pp_elem env prev) e
         (pp pp_elem env prev) sgm
     | Id =>
       fprintf fmt "ι"
@@ -185,11 +155,11 @@ let module Pretty: {
   };
 
   let module Clo = {
-    let rec pp env prev fmt (Clo.Clo term sgm) => {
-      let next = Prec.calc term;
+    let rec pp env prev fmt (Clo.Clo e sgm) => {
+      let next = Prec.calc e;
       fprintf fmt "@[%a%a%a[%a]@]"
         (Delim.pp prev next) "("
-        (Term.pp env next) term
+        (Term.pp env next) e
         (Delim.pp prev next) ")"
         (Sub.pp pp env next) sgm
     };
@@ -216,7 +186,10 @@ let module Pretty: {
 };
 
 let module Machine = {
-  type t = { clo: Clo.t, ctx: Zip.t Clo.t };
+  type t = {
+    clo: Clo.t,
+    ctx: Zip.t Clo.t,
+  };
   open Clo;
   open Syntax.Sub;
   open Syntax.Term;
