@@ -190,9 +190,6 @@ let module Machine = {
     clo: Clo.t,
     ctx: Zip.t Clo.t,
   };
-  open Clo;
-  open Syntax.Sub;
-  open Syntax.Term;
 
   let pp fmt state => {
     fprintf fmt "@[<v>ctx:@[<v -2>@,%a@]@,clo:@[<v -2>@,%a@]@]@."
@@ -203,6 +200,9 @@ let module Machine = {
   let step state => {
     pp std_formatter state;
     switch state {
+    open Clo;
+    open Syntax.Sub;
+    open Syntax.Term;
     /* left */
     | { clo: Clo (App e0 e1) sgm, ctx } =>
       let clo = Clo e0 sgm;
@@ -242,6 +242,8 @@ let module Machine = {
   };
 
   let into e => {
+    open Clo;
+    open Syntax.Sub;
     let clo = Clo e Id;
     let ctx = Zip.Halt;
     { clo, ctx }
