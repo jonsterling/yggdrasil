@@ -50,10 +50,14 @@ Prerequisites:
 ```sh
 $ git clone https://github.com/freebroccolo/yggdrasil
 $ cd yggdrasil
+$ opam switch yggdrasil --alias-of=4.02.3 # optional
 $ make install
 ```
 
 This will compile the project and place binaries in the `./bin` directory.
+
+We recommended creating a custom OPAM switch as above to isolate project
+dependencies. Once the `opam local` feature is ready we will use it by default.
 
 ### Running
 
