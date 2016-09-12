@@ -54,8 +54,8 @@ lib-native:
 links: bin/yggdrasil
 
 preinstall:
-	@${OPAM} show merlin | ${GREP} 'upstream-url.*#reason.*$$' > /dev/null || ${OPAM} pin -y add merlin 'https://github.com/the-lambda-church/merlin.git#reason-0.0.1'
-	@${OPAM} show merlin_extend | ${GREP} 'upstream-url.*#reason.*$$' > /dev/null || ${OPAM} pin -y add merlin_extend 'https://github.com/let-def/merlin-extend.git#reason-0.0.1'
+	@${OPAM} show merlin | ${GREP} 'upstream-url.*freebroccolo/merlin.*$$' > /dev/null || ${OPAM} pin -y add merlin 'https://github.com/freebroccolo/merlin.git'
+	@${OPAM} show merlin_extend | ${GREP} 'upstream-url.*freebroccolo/merlin-extend.*$$' > /dev/null || ${OPAM} pin -y add merlin_extend 'https://github.com/freebroccolo/merlin-extend.git'
 	@${OPAM} show reason | ${GREP} 'upstream-url.*freebroccolo/reason.*$$' > /dev/null || ${OPAM} pin -y add reason 'https://github.com/freebroccolo/reason.git'
 	@${OPAM} list -i cats > /dev/null || ${OPAM} pin -y add cats git://github.com/freebroccolo/ocaml-cats
 	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
