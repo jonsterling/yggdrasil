@@ -126,9 +126,8 @@ let pp fmt computad => {
       (Cells.pp computad) computad.cells
   };
   if (not @@ Map.is_empty computad.rules) {
-    ()
-    /* fprintf fmt "@,@[<v>rules:@,%a@]"
-      (Rules.pp computad) computad.rules */
+    fprintf fmt "@,@[<v>rules:@,%a@]"
+      (Rules.pp computad) computad.rules
   };
   fprintf fmt "@]";
 };
