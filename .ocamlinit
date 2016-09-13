@@ -2,6 +2,7 @@
 #require "cats";;
 #require "containers";;
 #require "containers.data";;
+#require "fmt";;
 #require "menhirLib";;
 #require "optics";;
 #require "ppx_deriving.std";;

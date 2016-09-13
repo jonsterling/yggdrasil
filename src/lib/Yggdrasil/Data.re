@@ -7,7 +7,7 @@ let module Diag = {
   type t 'a = {
     lhs: list 'a,
     rhs: list 'a,
-  } [@@deriving (eq, ord, show)];
+  } [@@deriving (eq, ord)];
   let module T = TyCon.TC1({ type nonrec t 'a = t 'a });
   let module Functor = {
     let module T = T;
@@ -35,6 +35,24 @@ let module Diag = {
       M.T.co @@ M.apply (M.apply ret lhs) rhs;
     };
   };
+  let rec pp pp_a fmt diag => {
+    let pp_list fmt list => {
+      switch list {
+        | [] =>
+          fprintf fmt "[]"
+        | _ =>
+          let pp_sep fmt () => fprintf fmt ",@ ";
+          fprintf fmt "@[<hov 2>[@ ";
+          pp_print_list pp_sep::pp_sep pp_a fmt list;
+          fprintf fmt "@]@ ]";
+      };
+    };
+    fprintf fmt "%a(@[<hov -5>@[<hov -3>@,%a,@ %a@]@,)@]"
+      (Fmt.styled `Green pp_print_string) "Diag"
+      (pp_list) diag.lhs
+      (pp_list) diag.rhs
+  };
+  let show pp_a => [%derive.show: t 'a [@printer pp pp_a]];
 };
 
 let module Rose = {
@@ -92,10 +110,11 @@ let module Rose = {
       | ord => ord;
       };
     };
-    let rec pp pp_node fmt (Fork node diag) => {
-      fprintf fmt "Fork(@[%a,@ %a@])"
-        (pp_node) node
-        (Diag.pp (pp pp_node)) diag;
+    let rec pp pp_a fmt (Fork node diag) => {
+      fprintf fmt "%a(@[<hov -5>@[<hov -3>@,%a,@ %a@]@,)@]"
+        (Fmt.styled `Green pp_print_string) "Fork"
+        (pp_a) node
+        (Diag.pp @@ pp pp_a) diag;
     };
     let show pp_node => [%derive.show: t _ [@printer pp pp_node]];
   };
