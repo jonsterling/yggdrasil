@@ -3,8 +3,8 @@ let module S = Syntax;
 let module Ctx: {
   type t [@@deriving (eq, ord)];
   let empty: t;
-  let push: t => S.Telescope.Term.t => t;
-  let arity: t => S.Variable.Term.t => S.Frame.t;
+  let push: t => S.Scope.Term.t => t;
+  let arity: t => S.Name.Term.t => S.Frame.t;
 };
 
 let module Chk: {

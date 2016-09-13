@@ -1,11 +1,9 @@
 %{
 [@@@warning "-9"]
-open Format
 open Syntax
-module R = Data.Rose
 
 module Ctx = CCSet.Make(struct
-  type t = Operator.t
+  type t = Name.Oper.t
   let compare = compare
 end)
 %}
@@ -28,7 +26,7 @@ end)
 
 %type <Frame.t> frame
 %type <Bind.Term.t> bind
-%type <Telescope.Term.t> telescope
+%type <Scope.Term.t> telescope
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> cell
 %type <Computad.t * Dimension.t -> Computad.t * Dimension.t> computad_item
 %type <Ctx.t -> Face.t> face
@@ -60,11 +58,13 @@ end)
 frame:
   | result = parens(pair(preceded(KEYWORD_ARITY, single_or_squares(frame)), face))
 {
+  let open Data in
   let (niche, face) = result in
-  let tele = [] in
   let face = face Ctx.empty in
-  let scoped = { Scoped.tele; face } in
-  R.Fork (scoped, niche)
+  let lhs = [] in
+  let rhs = niche in
+  let diag = { Diag.lhs; rhs } in
+  Rose.Fork (face, diag)
 }
   | face = face
 { Frame.point @@ face Ctx.empty }
@@ -105,16 +105,16 @@ computad_item:
   | face = parens(preceded(KEYWORD_ANALYZE, face))
 {
   fun sigma ->
+    let open Format in
     let module T = Typing in
     let dim = 2 in
     let face = face Ctx.empty in
     let frame = T.Inf.Face.arity (fst sigma) T.Ctx.empty face in
-    let () =
-      fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
-        (Face.pp dim) face
-        (Frame.pp dim) frame
-    ; pp_print_flush std_formatter () in
-    sigma
+    fprintf std_formatter "@.@[<v>@[<hv 2>term:@ %a@]@,@[<hv 2>type:@ %a@]@,@]"
+      (Face.pp dim) face
+      (Frame.pp dim) frame
+    ; pp_print_flush std_formatter ()
+    ; sigma
 }
   ;
 
@@ -133,7 +133,7 @@ face_parens:
   fun gamma ->
     let (tele, face) = result in
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
-    Face.Lm ([], tele, face gamma)
+    Face.Abs ([], tele, face gamma)
 }
   | result = pair(operator_or_variable, nonempty_list(term))
 {
@@ -145,17 +145,25 @@ face_parens:
 
 operator_or_variable:
   | id = IDENTIFIER
-{ fun gamma -> if Ctx.mem id gamma then Face.VarT id else Face.Op id }
+{
+  fun gamma ->
+    if Ctx.mem id gamma then
+      Face.Var (Name.Term id)
+    else
+      Face.Var (Name.Oper id)
+}
   ;
 
 term:
   | face = operator_or_variable
 {
   fun gamma ->
-    let tele = [] in
+    let open Data in
     let face = face gamma in
-    let scoped = { Scoped.tele; face } in
-    R.Fork (scoped, [])
+    let lhs = [] in
+    let rhs = [] in
+    let diag = { Diag.lhs; rhs } in
+    Rose.Fork (face, diag)
 }
   | term = parens(term_parens)
 { term }
@@ -167,16 +175,18 @@ term_parens:
   fun gamma ->
     let (tele, face) = result in
     let gamma = Ctx.union gamma @@ Ctx.of_list @@ CCList.map fst tele in
-    [] --> Face.Lm ([], tele, face gamma)
+    [] --> Face.Abs ([], tele, face gamma)
 }
   | result = pair(operator_or_variable, nonempty_list(term))
 {
   fun gamma ->
+    let open Data in
     let (face, complex) = result in
-    let tele = [] in
     let face = face gamma in
-    let scoped = { Scoped.tele; face } in
-    R.Fork (scoped, CCList.map ((|>) gamma) complex)
+    let lhs = [] in
+    let rhs = CCList.map ((|>) gamma) complex in
+    let diag = { Diag.lhs; rhs } in
+    Rose.Fork (face, diag)
 }
   ;
 

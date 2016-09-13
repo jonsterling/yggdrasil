@@ -1,15 +1,59 @@
-let module Rose = {
-  open Cats;
-  open Format;
+open Cats;
+open Format;
+open Optics;
 
+let module Diag = {
+  let module L = Mod.Traversable.List;
+  type t 'a = {
+    lhs: list 'a,
+    rhs: list 'a,
+  } [@@deriving (eq, ord, show)];
+  let module T = TyCon.TC1({ type nonrec t 'a = t 'a });
+  let module Functor = {
+    let module T = T;
+    let map op { lhs, rhs }=> {
+      let lhs = CCList.map op lhs;
+      let rhs = CCList.map op rhs;
+      { lhs, rhs };
+    };
+  };
+  let module Foldable = {
+    let module T = T;
+    let fold_map (type m) (m: Sig.monoid m) act { lhs, rhs }=> {
+      let module M = (val m);
+      L.fold_map m act (lhs @ rhs)
+    };
+  };
+  let module Traversable = {
+    include Functor;
+    include (Foldable: module type Foldable with module T := T);
+    let traverse (type m) (m: Sig.applicative m) act { lhs, rhs } => {
+      let module M = (val m);
+      let lhs = M.T.el @@ L.traverse m act lhs;
+      let rhs = M.T.el @@ L.traverse m act rhs;
+      let ret = M.pure @@ fun lhs rhs => { lhs, rhs };
+      M.T.co @@ M.apply (M.apply ret lhs) rhs;
+    };
+  };
+};
+
+let module Rose = {
   let module Def = {
-    include Def.Cofree.Make Def.Functor.List;
-    include (Def.Comonad.Cofree Def.Functor.List: Sig.COMONAD with module T := T);
-    include (Def.Traversable.Cofree Def.Functor.List Def.Traversable.List: Sig.TRAVERSABLE with module T := T);
-    let fork x xs => Fork x xs;
-    let pure x => Fork x [];
-    let rec bind (Fork x xs) k => switch (k x) {
-      | Fork x' xs' => Fork x' (List.append xs' @@ CCList.map (fun x => bind x k) xs)
+    include Def.Cofree.Make Diag.Functor;
+    include (Def.Comonad.Cofree Diag.Functor: Sig.COMONAD with module T := T);
+    include (Def.Traversable.Cofree Diag.Functor Diag.Traversable: Sig.TRAVERSABLE with module T := T);
+    let fork node corollas => Fork node corollas;
+    let pure node => {
+      let lhs = [];
+      let rhs = [];
+      Fork node { Diag.lhs, rhs };
+    };
+    let rec bind (Fork node { Diag.lhs:lhsSuffix, rhs:rhsSuffix }) k => switch (k node) {
+      | Fork node { Diag.lhs:lhsPrefix, rhs:rhsPrefix } => {
+        let lhs = List.append lhsPrefix @@ CCList.map (fun x => bind x k) lhsSuffix;
+        let rhs = List.append rhsPrefix @@ CCList.map (fun x => bind x k) rhsSuffix;
+        Fork node { Diag.lhs, rhs };
+      };
     };
     let apply mf mx =>
       bind mf @@ fun f =>
@@ -27,66 +71,93 @@ let module Rose = {
   include Ext.Monad.Make Def;
   include Ext.Traversable.Make Def;
 
-  let rec equal eq_elem (Fork x xs) (Fork y ys) =>
-    eq_elem x y && equal_bouquet eq_elem xs ys
-  and equal_bouquet eq_elem xs ys =>
-    CCList.equal (equal eq_elem) xs ys;
-
-  let rec compare ord_elem (Fork x xs) (Fork y ys) => switch (ord_elem x y) {
-    | 0 => compare_bouquet ord_elem xs ys
-    | ord => ord
-  }
-  and compare_bouquet ord_elem xs ys =>
-    CCList.compare (compare ord_elem) xs ys;
-
-  let rec pp pp_elem fmt (Fork x xs) =>
-    fprintf fmt "@[<v>Fork@,(@[<h>@ %a@]@,,@[<h>@ %a@ @])@]"
-      (pp_elem) x
-      (pp_bouquet pp_elem) xs
-  and pp_bouquet pp_elem fmt xs => {
-    let pp_sep fmt () => fprintf fmt "@,,@[@ @]";
-    fprintf fmt "@[<v 2>[@[";
-    if (not (CCList.is_empty xs)) { fprintf fmt "@ " };
-    fprintf fmt "@]%a@[" (pp_print_list pp_sep::pp_sep @@ pp pp_elem) xs;
-    if (not (CCList.is_empty xs)) { fprintf fmt "@ " };
-    fprintf fmt "@]]@]"
-  };
-
-  let show_poly pp_t pp_elem => [%derive.show: t 'a [@printer pp_t pp_elem]];
-
-  let show pp_elem => [%derive.show: t 'a [@printer pp pp_elem]];
-
-  let module Corolla = {
-    type nonrec t 'a = list (Def.t 'a);
-    let equal = equal_bouquet;
-    let compare = compare_bouquet;
-    let pp = pp_bouquet;
-    let show pp_elem => show_poly pp_bouquet pp_elem;
-  };
-
-  let module Lenses = {
-    let head = { as _;
-      method get = extract;
-      method set h (Fork _ t) => Fork h t;
+  let module Derived: {
+    let equal: ('a => 'a => bool) => (t 'a => t 'a => bool);
+    let compare: ('a => 'a => int) => (t 'a => t 'a => int);
+    let pp: (formatter => 'a => unit) => (formatter => t 'a => unit);
+    let show: (formatter => 'a => unit) => (t 'a => string);
+  } = {
+    let rec equal eq_node (Fork node0 diag0) (Fork node1 diag1) => {
+      eq_node node0 node1 &&
+      CCList.equal (equal eq_node) diag0.Diag.lhs diag1.Diag.lhs &&
+      CCList.equal (equal eq_node) diag0.Diag.rhs diag1.Diag.rhs;
     };
-    let tail = { as _;
-      method get (Fork _ t) => t;
-      method set t (Fork h _) => Fork h t;
+    let rec compare ord_node (Fork node0 diag0) (Fork node1 diag1) => {
+      switch (ord_node node0 node1) {
+      | 0 =>
+        switch (CCList.compare (compare ord_node) diag0.Diag.lhs diag1.Diag.lhs) {
+        | 0 =>  CCList.compare (compare ord_node) diag1.Diag.lhs diag1.Diag.rhs;
+        | ord => ord;
+        }
+      | ord => ord;
+      };
+    };
+    let rec pp pp_node fmt (Fork node diag) => {
+      fprintf fmt "Fork(@[%a,@ %a@])"
+        (pp_node) node
+        (Diag.pp (pp pp_node)) diag;
+    };
+    let show pp_node => [%derive.show: t _ [@printer pp pp_node]];
+  };
+
+  let module Corolla: {
+    type nonrec t 'a = list (t 'a);
+    let equal: ('a => 'a => bool) => (t 'a => t 'a => bool);
+    let compare: ('a => 'a => int) => (t 'a => t 'a => int);
+    let pp: (formatter => 'a => unit) => (formatter => t 'a => unit);
+    let show: (formatter => 'a => unit) => (t 'a => string);
+  } = {
+    type nonrec t 'a = list (t 'a);
+    let equal eq_node => CCList.equal (Derived.equal eq_node);
+    let compare ord_node => CCList.compare (Derived.compare ord_node);
+    let pp pp_node => pp_print_list pp_sep::pp_print_space (Derived.pp pp_node);
+    let show pp_node => [%derive.show: t _ [@printer pp pp_node]];
+  };
+
+  include Derived;
+};
+
+let module List = {
+  let module Lenses = {
+    [@@@warning "-27"];
+    open Lens.Ops;
+    let module Diag = {
+      let lhs = {
+        method get { Diag.lhs, _ } => lhs;
+        method set lhs diag => { ...diag, Diag.lhs };
+      };
+      let rhs = {
+        method get { Diag.rhs, _ } => rhs;
+        method set rhs diag => { ...diag, Diag.rhs };
+      };
+    };
+    let module Rose = {
+      open Rose;
+      let node = {
+        method get = extract;
+        method set n (Fork _ d) => Fork n d;
+      };
+      let diag = {
+        method get (Fork _ d) => d;
+        method set d (Fork n _) => Fork n d;
+      };
+      let lhs () => diag %>\* Diag.lhs;
+      let rhs () => diag %>\* Diag.rhs;
     };
   };
 
   let module Prisms = {
-    open Amb;
-    open Coproduct;
+    [@@@warning "-27"];
+    open Amb.Coproduct;
 
-    let nil = { as _;
-      method inj = const [];
+    let nil = {
+      method inj _ => [];
       method inv = fun
         | [] => inr ()
         | xs => inl xs
     };
 
-    let cons = { as _;
+    let cons = {
       method inj (x, xs) => [x, ...xs];
       method inv = fun
         | [x, ...xs] => inr (x, xs)
