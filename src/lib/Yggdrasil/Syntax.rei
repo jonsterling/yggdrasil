@@ -82,7 +82,7 @@ and Term: {
 
 let module Cell: {
   type t = {
-    op: Name.Oper.t,
+    oname: Name.Oper.t,
     frame: Frame.t,
   } [@@deriving (eq, ord)];
 };

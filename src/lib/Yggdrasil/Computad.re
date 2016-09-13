@@ -8,41 +8,35 @@ module type Sig = {
   let arity: t => Name.Oper.t => Frame.t;
 };
 
-let module Trie = {
-  include CCTrie.MakeList {
-    type t = Term.t;
-    let compare = Term.compare;
-  };
+let module Trie = CCTrie.MakeList {
+  type t = Term.t;
+  let compare = Term.compare;
 };
 
 let module Patterns: {
-  type t = Trie.t (Term.t, Name.Oper.t) [@@deriving show];
+  type t = Trie.t Cell.t [@@deriving show];
 } = {
-  let print fmt trie => {
+  let print fmt (trie: Trie.t Cell.t) => {
     let dim = 2;
-    let list =
-      List.fast_sort
-        (fun (_pt0, (_ar0, op0)) (_pt1, (_ar1, op1)) => Name.Oper.compare op0 op1)
-        (Trie.to_list trie);
-    let assoc fmt => fun
-      | ([dom], (cod, _op)) =>
+    let sort (_prefix0, cell0) (_prefix1, cell1) => Name.Oper.compare cell0.Cell.oname cell1.Cell.oname;
+    let alist = List.fast_sort sort @@ Trie.to_list trie;
+    let pp_entry fmt => fun
+      | ([source], { Cell.frame: target, _ }) =>
         fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
-          (Term.pp dim) dom
-          (Term.pp dim) cod
-      | (dom, (cod, _op)) =>
+          (Term.pp dim) source
+          (Term.pp dim) target
+      | (source, { Cell.frame: target, _ }) =>
         fprintf fmt "@[%a@,@ @[⇒@ %a@]@]"
-          (CCFormat.list @@ Term.pp dim) dom
-          (Term.pp dim) cod;
-    fprintf fmt "@[<v>%a@]" (CCFormat.list start::"" sep::"" stop::"" assoc) list
+          (CCFormat.list @@ Term.pp dim) source
+          (Term.pp dim) target;
+    fprintf fmt "@[<v>%a@]" (CCFormat.list start::"" sep::"" stop::"" pp_entry) alist
   };
-  type t = Trie.t (Term.t, string) [@show.printer print] [@@deriving show];
+  type t = Trie.t Cell.t [@show.printer print] [@@deriving show];
 };
 
-let module Map = {
-  include CCMap.Make {
-    type t = Name.Oper.t;
-    let compare = compare;
-  };
+let module Map = CCMap.Make {
+  type t = Name.Oper.t;
+  let compare = compare;
 };
 
 type t = {
@@ -140,15 +134,24 @@ let empty = {
   rules: Map.empty,
 };
 
-let bind sigma dim { Cell.op, frame } => {
+let bind sigma dim { Cell.oname, frame } => {
   open Data;
-  let cells = Map.add op frame sigma.cells;
-  let dimensions = Map.add op dim sigma.dimensions;
+  let cells = Map.add oname frame sigma.cells;
+  let dimensions = Map.add oname dim sigma.dimensions;
   let rules = switch frame {
     | Rose.Fork face { Diag.rhs: [Rose.Fork (Face.Var (Name.Oper oper)) { Diag.rhs: args, _ }], _ } when dim > 1 =>
-      let update = fun
-        | None => Some (Trie.add args (Frame.point face, op) Trie.empty)
-        | Some pre => Some (Trie.add args (Frame.point face, op) pre);
+      let update trie => {
+        switch trie {
+        | None =>
+          let frame = Frame.point face;
+          let cell = { Cell.oname, frame };
+          Some (Trie.add args cell Trie.empty);
+        | Some pre =>
+          let frame = Frame.point face;
+          let cell = { Cell.oname, frame };
+          Some (Trie.add args cell pre);
+        };
+      };
       Map.update oper update sigma.rules
     | _ => sigma.rules
   } [@warning "-4"];

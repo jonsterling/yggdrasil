@@ -240,7 +240,7 @@ and Term: {
 
 let module Cell = {
   type t = {
-    op: Name.Oper.t,
+    oname: Name.Oper.t,
     frame: Frame.t,
   } [@@deriving (eq, ord)];
 };
@@ -266,12 +266,12 @@ let (-->) niche face => {
   Rose.Fork face niche;
 };
 
-let (<:) op frame => {
-  { Cell.op, frame };
+let (<:) oname frame => {
+  { Cell.oname, frame };
 };
 
-let (<!) op face => {
-  { Cell.op, frame: Frame.point face };
+let (<!) oname face => {
+  { Cell.oname, frame: Frame.point face };
 };
 
 let module Builtin = {
