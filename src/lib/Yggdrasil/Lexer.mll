@@ -9,6 +9,7 @@ end
 module type LEXER = sig
   val token : lexbuf -> token Lwt.t
 end
+type lexer = (module LEXER)
 
 module Make (R : SOURCE) : LEXER = struct
   let refill_handler k lexbuf =
@@ -121,7 +122,7 @@ module LwtSource (S : STATE): SOURCE = struct
 end
 
 let create ix sz =
-  let pkg : (module LEXER) = (module Make(LwtSource(struct
+  let pkg : lexer = (module Make(LwtSource(struct
     let ix = ix
     let sz = sz
   end))) in

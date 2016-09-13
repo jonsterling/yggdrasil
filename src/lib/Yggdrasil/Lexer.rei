@@ -8,6 +8,7 @@ module type SOURCE = {
 module type LEXER = {
   let token: lexbuf => Lwt.t token;
 };
+type lexer = (module LEXER);
 
 let module Make: (R: SOURCE) => LEXER;
 
@@ -18,5 +19,5 @@ module type STATE = {
 
 let module LwtSource: (S: STATE) => SOURCE;
 
-let create: Lwt_io.input_channel => int => ((module LEXER), lexbuf);
+let create: Lwt_io.input_channel => int => (lexer, lexbuf);
 let tokens: Lwt_io.input_channel => Lwt_stream.t token;
