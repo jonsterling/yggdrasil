@@ -149,7 +149,7 @@ let create ix sz =
 
 let tokens ix =
   let len = 1024 in
-  let pkg, buf = create ix len in
+  let (pkg, buf) = create ix len in
   let module Lwt_lex = (val pkg : LEXER) in
   let go () = match%lwt Lwt_lex.token buf with
     | tok -> Lwt.return (Some tok)
