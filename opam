@@ -13,4 +13,5 @@ depends: [
   "fmt"
   "lwt"
   "ppx_deriving"
+  "uuseg"
 ]
