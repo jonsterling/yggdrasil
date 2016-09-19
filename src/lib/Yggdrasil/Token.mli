@@ -1,6 +1,6 @@
 type token =
   | EOF
-  | IDENTIFIER string
+  | IDENTIFIER of string
   | KEYWORD_ANALYZE
   | KEYWORD_ARITY
   | KEYWORD_CELL
@@ -12,4 +12,9 @@ type token =
   | LEFT_SQUARE_BRACKET
   | RIGHT_PARENTHESIS
   | RIGHT_SQUARE_BRACKET
-  [@@deriving (eq, ord, show)];
+  [@@deriving (eq, ord, show)]
+
+module Pretty : sig
+  val pp : token Fmt.t
+  val pp_utf_8 : token Fmt.t
+end

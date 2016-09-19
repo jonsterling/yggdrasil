@@ -6,6 +6,6 @@
 #require "menhirLib";;
 #require "optics";;
 #require "ppx_deriving.std";;
-#require "uuseg";;
+#require "uuseg.string";;
 #directory "_build/src/lib";;
 #load "yggdrasil.cma";;

@@ -4,7 +4,7 @@ GIT=git
 GREP=grep
 MENHIR_FLAGS=-use-menhir -menhir 'menhir --external-tokens Token --table'
 MKDIR=mkdir -p
-OCAMLBUILD=rebuild
+OCAMLBUILD=ocamlbuild
 OCAMLBUILD_JOBS=-j 0
 OCAMLBUILD_FLAGS=${OCAMLBUILD_JOBS} -use-ocamlfind -no-links ${MENHIR_FLAGS}
 OPAM=opam
@@ -22,7 +22,7 @@ bin:
 	@${MKDIR} bin
 
 bin/yggdrasil: bin
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil src/tools/yggdrasil/Main.native 2>&1 | refmterr
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} -I src/lib/Yggdrasil src/tools/yggdrasil/Main.native
 	@${SYMLINK} ${BUILD_DIR}/src/tools/yggdrasil/Main.native bin/yggdrasil
 
 clean:
@@ -46,17 +46,14 @@ install: preinstall
 	@echo "* run './bin/yggdrasil help' for details"
 
 lib-byte:
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma 2>&1 | refmterr
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cma
 
 lib-native:
-	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa 2>&1 | refmterr
+	@${OCAMLBUILD} ${OCAMLBUILD_FLAGS} src/lib/yggdrasil.cmxa
 
 links: bin/yggdrasil
 
 preinstall:
-	@${OPAM} show merlin | ${GREP} 'upstream-url.*freebroccolo/merlin.*$$' > /dev/null || ${OPAM} pin -y add merlin 'https://github.com/freebroccolo/merlin.git'
-	@${OPAM} show merlin_extend | ${GREP} 'upstream-url.*freebroccolo/merlin-extend.*$$' > /dev/null || ${OPAM} pin -y add merlin_extend 'https://github.com/freebroccolo/merlin-extend.git'
-	@${OPAM} show reason | ${GREP} 'upstream-url.*freebroccolo/reason.*$$' > /dev/null || ${OPAM} pin -y add reason 'https://github.com/freebroccolo/reason.git'
 	@${OPAM} list -i cats > /dev/null || ${OPAM} pin -y add cats git://github.com/freebroccolo/ocaml-cats
 	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
 	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin -y add .
