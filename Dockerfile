@@ -1,4 +1,4 @@
-FROM ocaml/opam:ubuntu-16.04_ocaml-4.02.3
+FROM ocaml/opam:ubuntu-16.04_ocaml-4.04.0
 MAINTAINER Darin Morrison <freebroccolo@users.noreply.github.com>
 USER opam
 ENV TERM xterm
