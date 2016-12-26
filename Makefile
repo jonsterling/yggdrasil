@@ -55,7 +55,6 @@ links: bin/yggdrasil
 
 preinstall:
 	@${OPAM} list -i cats > /dev/null || ${OPAM} pin -y add cats git://github.com/freebroccolo/ocaml-cats
-	@${OPAM} list -i optics > /dev/null || ${OPAM} pin -y add optics git://github.com/freebroccolo/ocaml-optics
 	@${OPAM} list -i yggdrasil > /dev/null || ${OPAM} pin -y add .
 
 test: all examples

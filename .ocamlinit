@@ -4,7 +4,6 @@
 #require "containers.data";;
 #require "fmt";;
 #require "menhirLib";;
-#require "optics";;
 #require "ppx_deriving.std";;
 #require "uuseg.string";;
 #directory "_build/src/lib";;

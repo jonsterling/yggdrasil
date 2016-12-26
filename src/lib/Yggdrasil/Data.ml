@@ -1,6 +1,5 @@
 open Cats
 open Format
-open Optics
 
 module Diag = struct
   module L = Mod.Traversable.List
@@ -116,50 +115,4 @@ module Rose = struct
     let show pp_node = [%derive.show: _ t [@printer pp pp_node]]
   end
   include Derived
-end
-
-module List = struct
-  module Lenses = struct
-    [@@@warning "-27"]
-    open Lens.Ops
-    module Diag = struct
-      let lhs = object
-        method get { Diag.lhs = lhs; _ } = lhs
-        method set lhs diag = { diag with Diag.lhs = lhs }
-      end
-      let rhs = object
-        method get { Diag.rhs = rhs; _ } = rhs
-        method set rhs diag = { diag with Diag.rhs = rhs }
-      end
-    end
-    module Rose = struct
-      open Rose
-      let node = object
-        method get = extract
-        method set n (Fork (_, d)) = Fork (n, d)
-      end
-      let diag = object
-        method get (Fork (_, d)) = d
-        method set d (Fork (n, _)) = Fork (n, d)
-      end
-      let lhs () = diag %>* Diag.lhs
-      let rhs () = diag %>* Diag.rhs
-    end
-  end
-  module Prisms = struct
-    [@@@warning "-27"]
-    open Amb.Coproduct
-    let nil = object
-      method inj _ = []
-      method inv = function
-        | [] -> inr ()
-        | xs -> inl xs
-    end
-    let cons = object
-      method inj (x, xs) = x :: xs
-      method inv = function
-        | x :: xs -> inr (x, xs)
-        | xs -> inl xs
-    end
-  end
 end

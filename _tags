@@ -7,7 +7,6 @@ true: package(fmt.tty)
 true: package(lwt.ppx)
 true: package(lwt.unix)
 true: package(menhirLib)
-true: package(optics)
 true: package(ppx_deriving.std)
 true: package(uuseg.string)
 true: short_paths

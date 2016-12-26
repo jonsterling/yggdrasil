@@ -1,6 +1,5 @@
 open Cats
 open Format
-open Optics
 
 module Diag : sig
   type 'a t = {
@@ -51,23 +50,4 @@ module Rose : sig
   val compare : ('a -> 'a -> int) -> ('a t -> 'a t -> int)
   val pp : (formatter -> 'a -> unit) -> (formatter -> 'a t -> unit)
   val show : (formatter -> 'a -> unit) -> ('a t -> string)
-end
-
-module List : sig
-  module Lenses : sig
-    module Rose : sig
-      val node : ('a Rose.t, 'a) Lens.t
-      val diag : ('a Rose.t, ('a Rose.t) Diag.t) Lens.t
-      val lhs : unit -> ('a Rose.t, ('a Rose.t) list) Lens.t
-      val rhs : unit -> ('a Rose.t, ('a Rose.t) list) Lens.t
-    end
-    module Diag : sig
-      val lhs : ('a Diag.t, 'a list) Lens.t
-      val rhs : ('a Diag.t, 'a list) Lens.t
-    end
-  end
-  module Prisms : sig
-    val nil : ('a list , 'a list, unit, 'b) PrismP.t
-    val cons : ('a list, ('a * 'a list)) Prism.t
-  end
 end
