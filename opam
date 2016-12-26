@@ -12,6 +12,7 @@ depends: [
   "containers"
   "fmt"
   "lwt"
+  "menhir"
   "ppx_deriving"
   "uuseg"
   "uutf"
