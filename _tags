@@ -10,7 +10,7 @@ true: package(menhirLib)
 true: package(ppx_deriving.std)
 true: package(uuseg.string)
 true: short_paths
-true: warn(+a-6-30-32-39-41-42-48)
+true: warn(+a-6-30-32-39-41-42-48-60)
 true: warn_error(A)
 <*/*> and not "src": -traverse
 <src/lib/Yggdrasil/*.cmx>: for-pack(Yggdrasil)
