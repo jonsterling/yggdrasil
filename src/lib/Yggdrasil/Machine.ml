@@ -54,8 +54,7 @@ module Zip = struct
       | App0 (zip, e1) -> App0 (go zip, f e1)
       | App1 (e0, zip) -> App1 (f e0, go zip)
       | Halt -> Halt
-      | Lam zip -> Lam (go zip)
-    in
+      | Lam zip -> Lam (go zip) in
     go sgm
 
   let rec apply zip acc = match zip with

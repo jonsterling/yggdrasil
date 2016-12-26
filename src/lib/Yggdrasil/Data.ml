@@ -25,10 +25,10 @@ module Diag = struct
     include (Foldable : module type of Foldable with module T := T)
     let traverse (type m) (m : m Sig.applicative) act { lhs; rhs } =
       let module M = (val m) in
-        let lhs = M.T.el @@ (L.traverse m act lhs) in
-        let rhs = M.T.el @@ (L.traverse m act rhs) in
-        let ret = M.pure @@ (fun lhs -> fun rhs -> { lhs; rhs }) in
-        M.T.co @@ (M.apply (M.apply ret lhs) rhs)
+      let lhs = M.T.el @@ (L.traverse m act lhs) in
+      let rhs = M.T.el @@ (L.traverse m act rhs) in
+      let ret = M.pure @@ (fun lhs -> fun rhs -> { lhs; rhs }) in
+      M.T.co @@ (M.apply (M.apply ret lhs) rhs)
   end
 
   let rec pp pp_a fmt diag =
@@ -36,10 +36,10 @@ module Diag = struct
       match list with
       | [] -> fprintf fmt "[]"
       | _ ->
-          let pp_sep fmt () = fprintf fmt ",@ " in
-          (fprintf fmt "@[<hov 2>[@ ";
-            Fmt.list ~sep:pp_sep pp_a fmt list;
-            fprintf fmt "@]@ ]") in
+        let pp_sep fmt () = fprintf fmt ",@ " in
+        (fprintf fmt "@[<hov 2>[@ ";
+         Fmt.list ~sep:pp_sep pp_a fmt list;
+         fprintf fmt "@]@ ]") in
     fprintf fmt "%a(@[<hov -5>@[<hov -3>@,%a,@ %a@]@,)@]"
       (Fmt.styled `Green Fmt.string) "Diag" pp_list diag.lhs pp_list
       diag.rhs
@@ -58,9 +58,9 @@ module Rose = struct
     let rec bind (Fork (node, { Diag.lhs = lhsSuffix; rhs = rhsSuffix })) k =
       match k node with
       | Fork (node, { Diag.lhs = lhsPrefix; rhs = rhsPrefix }) ->
-          let lhs = List.append lhsPrefix @@ CCList.map (fun x -> bind x k) lhsSuffix in
-          let rhs = List.append rhsPrefix @@ CCList.map (fun x -> bind x k) rhsSuffix in
-          Fork (node, { Diag.lhs = lhs; rhs })
+        let lhs = List.append lhsPrefix @@ CCList.map (fun x -> bind x k) lhsSuffix in
+        let rhs = List.append rhsPrefix @@ CCList.map (fun x -> bind x k) rhsSuffix in
+        Fork (node, { Diag.lhs = lhs; rhs })
     let apply mf mx =
       bind mf @@ fun f ->
       bind mx @@ fun x ->
@@ -90,10 +90,10 @@ module Rose = struct
     let rec compare ord_node (Fork (node0, diag0)) (Fork (node1, diag1)) =
       match ord_node node0 node1 with
       | 0 -> begin
-        match CCList.compare (compare ord_node) diag0.Diag.lhs diag1.Diag.lhs with
-        | 0 -> CCList.compare (compare ord_node) diag1.Diag.lhs diag1.Diag.rhs
-        | ord -> ord
-      end
+          match CCList.compare (compare ord_node) diag0.Diag.lhs diag1.Diag.lhs with
+          | 0 -> CCList.compare (compare ord_node) diag1.Diag.lhs diag1.Diag.rhs
+          | ord -> ord
+        end
       | ord -> ord
     let rec pp pp_a fmt (Fork (node, diag)) =
       fprintf fmt "%a(@[<hov -5>@[<hov -3>@,%a,@ %a@]@,)@]"

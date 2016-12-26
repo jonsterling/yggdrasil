@@ -36,9 +36,9 @@ end = struct
     | Term of Term.t
   [@@deriving (eq, ord)]
   let pp fmt = function
-  | Meta varM -> Meta.pp fmt varM
-  | Oper varO -> Oper.pp fmt varO
-  | Term varT -> Term.pp fmt varT
+    | Meta varM -> Meta.pp fmt varM
+    | Oper varO -> Oper.pp fmt varO
+    | Term varT -> Term.pp fmt varT
   let show = [%derive.show: t]
 end
 

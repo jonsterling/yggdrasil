@@ -9,9 +9,9 @@ module type Sig = sig
 end
 
 module Trie = CCTrie.MakeList(struct
-  type t = Term.t
-  let compare = Term.compare
-end)
+    type t = Term.t
+    let compare = Term.compare
+  end)
 
 module Patterns : sig
   type t = Cell.t Trie.t [@@deriving show]
@@ -39,9 +39,9 @@ end = struct
 end
 
 module Map = CCMap.Make(struct
-  type t = Name.Oper.t
-  let compare = compare
-end)
+    type t = Name.Oper.t
+    let compare = compare
+  end)
 
 type t = {
   cells: Frame.t Map.t;
@@ -89,13 +89,12 @@ module Dimensions = struct
       | ((op0, dm0), (op1, dm1)) ->
         match Dimension.compare dm0 dm1 with
         | 0 -> Name.Oper.compare op0 op1
-        | ord -> ord
-        in
+        | ord -> ord in
     let alist = List.fast_sort sort @@ Map.to_list map in
     let pp_entry fmt (op, dm) =
       fprintf fmt "@[<2>(dim@ %a@ %a)@]"
-      (Name.Oper.pp) op
-      (Dimension.pp) dm in
+        (Name.Oper.pp) op
+        (Dimension.pp) dm in
     fprintf fmt "@[<v 2>@[@  @]%a@,@]"
       (CCFormat.list ~start:"" ~sep:"" ~stop:"" pp_entry) alist
 end
@@ -119,13 +118,13 @@ end
 
 let pp fmt computad =
   fprintf fmt "@,@[<v 2>computad:@,"
-  ; if not @@ Map.is_empty computad.cells then
-      fprintf fmt "@,@[<v>cells:@,%a@]"
-        (Cells.pp computad) computad.cells
-  ; if not @@ Map.is_empty computad.rules then
-      fprintf fmt "@,@[<v>rules:@,%a@]"
-        (Rules.pp computad) computad.rules
-  ; fprintf fmt "@]"
+; if not @@ Map.is_empty computad.cells then
+    fprintf fmt "@,@[<v>cells:@,%a@]"
+      (Cells.pp computad) computad.cells
+; if not @@ Map.is_empty computad.rules then
+    fprintf fmt "@,@[<v>rules:@,%a@]"
+      (Rules.pp computad) computad.rules
+; fprintf fmt "@]"
 
 let show = [%derive.show: t [@printer pp]]
 
