@@ -1,48 +1,5 @@
 open Cmdliner
 
-let is_infix ~affix s =
-  (* Damned, already missing astring, from which this is c&p *)
-  let len_a = String.length affix in
-  let len_s = String.length s in
-  if len_a > len_s then false else
-    let max_idx_a = len_a - 1 in
-    let max_idx_s = len_s - len_a in
-    let rec loop i k =
-      if i > max_idx_s then false else
-      if k > max_idx_a then true else
-      if k > 0 then
-        if String.get affix k = String.get s (i + k) then loop i (k + 1) else
-          loop (i + 1) 0
-      else if String.get affix 0 = String.get s i then loop i 1 else
-        loop (i + 1) 0
-    in
-    loop 0 0
-
-let setup ?style_renderer ?utf_8 buf =
-  let ppf = Format.formatter_of_buffer buf in
-  let style_renderer = match style_renderer with
-    | Some r -> r
-    | None ->
-      let dumb = try Sys.getenv "TERM" = "dumb" with
-        | Not_found -> true in
-      if not dumb then `Ansi_tty else `None in
-  let utf_8 = match utf_8 with
-    | Some b -> b
-    | None ->
-      let has_utf_8 var = try
-          let res = String.uppercase (Sys.getenv var) in
-          let () = Printf.printf "%s\n" res in
-          is_infix "UTF-8" res
-        with
-        | Not_found -> false in
-      has_utf_8 "LANG" ||
-      has_utf_8 "LC_ALL" ||
-      has_utf_8 "LC_CTYPE" in
-  Printf.printf "%b\n" utf_8;
-  Fmt.set_style_renderer ppf style_renderer ;
-  Fmt.set_utf_8 ppf utf_8 ;
-  ppf
-
 let act_parse file_name =
   let open Format in
   let module P = Parser.Id in
@@ -58,7 +15,7 @@ let act_parse file_name =
       handler @@ M.resume chk
     | M.Accepted computad ->
       let buf = Buffer.create 0 in
-      let fmt = setup buf in
+      let fmt = formatter_of_buffer buf in
       let () = Computad.pp fmt computad in
       let () = pp_print_flush fmt () in
       Lwt_io.printl @@ Buffer.contents buf
@@ -82,10 +39,10 @@ let act_parse file_name =
 let cmd_parse =
   let doc = "parse file" in
   let file_name = Arg.
-                    ( required
-                      & pos ~rev:true 0 (some string) None
-                      & info [] ~doc ~docv:"FILE"
-                    ) [@warning "-44"] in
+    ( required
+    & pos ~rev:true 0 (some string) None
+    & info [] ~doc ~docv:"FILE"
+    ) [@warning "-44"] in
   Term.
     ( pure act_parse $ file_name
     , info "parse" ~doc
