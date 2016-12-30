@@ -4,333 +4,427 @@ open import Agda.Primitive
 open import Prelude.Bool
 open import Prelude.Decidable
 open import Prelude.Inspect
-open import Prelude.List
 open import Prelude.Maybe
 open import Prelude.Monoidal
-  hiding (_⇒_)
+  renaming (_⊗_ to _×_)
+open import Prelude.Natural
 open import Prelude.Path
 open import Prelude.Size
 open import Prelude.String
 
-infix 1 _⇒_
-infix 0 _⊩_∈_
-infix 0 _⊢_∈_
+infix 2 _⊸_
+infix 0 _▸_⊩_⇒_
+infix 0 _▸_⊩_⇐_⟖_
+infix 0 _▸_⊢_⇒_
+infixl 5 _⊛_
+infixl 5 _⊗_
 
-open List
-  using (_++_)
+data List (A : Set) : Set where
+  ε : List A
+  _⊗_ : (xs : List A) (x : A) → List A
 
-Name : Set
-Name = String
+_⊛_
+  : {A : Set}
+  → List A
+  → List A
+  → List A
+xs ⊛ ε = xs
+xs ⊛ (ys ⊗ y) = (xs ⊛ ys) ⊗ y
 
-Operator : Set
-Operator = Name
+list-eq
+  : {A : Set}
+  → (δ : (a a′ : A) → Decidable (a ≡ a′))
+  → (xs₀ xs₁ : List A)
+  → Decidable (xs₀ ≡ xs₁)
+list-eq _≟_ ε ε = ⊕.inr refl
+list-eq _≟_ ε (_ ⊗ _) = ⊕.inl λ()
+list-eq _≟_ (xs₀ ⊗ x₀) ε = ⊕.inl λ()
+list-eq _≟_ (xs₀ ⊗ x₀) (xs₁ ⊗ x₁) with x₀ ≟ x₁
+… | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+… | ⊕.inr refl with list-eq _≟_ xs₀ xs₁
+… | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+… | ⊕.inr refl = ⊕.inr refl
+
+OName = String
+TName = Nat
 
 mutual
-  data Complex : Set where
-    stop : (Γ : List Face) → Complex
-    step : (𝔣 : Face) (ω : Complex) → Complex
-    cmp⇔ : (ω₀ : Complex) (ω₁ : Complex) → Complex
-    cmp⇕ : (ω₁ : Complex) (ω₀ : Complex) → Complex
+  Canopy : Set
+  Canopy = List Frame
+
+  Cluster : Set
+  Cluster = List Face
+
+  Gallery : Set
+  Gallery = List Visage
+
+  data Mesh : Set where
+    nil : Mesh
+    cons : (ϕ : Face) (ω : Mesh) → Mesh
+    -- cut⇕ : (ω₀ : Mesh) (ω₁ : Mesh) → Mesh
+    -- cut⊗ : (ω₁ : Mesh) (ω₀ : Mesh) → Mesh
 
   data Face : Set where
-    idn : (Γ : List Face) → Face
-    cut : (𝔣 : Face) (ω : Complex) → Face
-    var : (ϑ : Operator) → Face
+    cut : (ϕ : Face) (ω : Mesh) → Face
+    abs : (Ϡ : Canopy) (ϕ : Face) → Face
+    ovar : (ϑ : OName) → Face
+    tvar : (x : TName) → Face
 
-record Arity : Set where
-  no-eta-equality
-  constructor _⇒_
-  field
-    dom : List Face
-    cod : List Face
-open Arity
-
-module Decl where
-  record Decl : Set where
+  record Frame : Set where
     no-eta-equality
+    inductive
+    constructor _⊸_
+    field
+      dom : Canopy
+      cod : Cluster
+
+  record Visage : Set where
+    no-eta-equality
+    inductive
     constructor ▸δ
     field
-      ϑ : Operator
-      α : Arity
-  open Decl public
+      ϑ : OName
+      ψ : Frame
 
-  ∂- : Decl → List Face
-  ∂- (▸δ ϑ (σ ⇒ τ)) = σ
+module Context where
+  Context : Set
+  Context = List Frame
 
-  ∂+ : Decl → List Face
-  ∂+ (▸δ ϑ (σ ⇒ τ)) = τ
-open Decl public
-  hiding (module Decl)
-  using (Decl)
-  using (▸δ)
+  look : (Γ : Context) (x : TName) → Maybe Frame
+  look ε x = no
+  look (Γ ⊗ ψ) ze = so ψ
+  look (Γ ⊗ ψ) (su x) = look Γ x
+open Context
+  using (Context)
 
-module Sig where
-  Sig : Set
-  Sig = List Decl
+module Signature where
+  Signature : Set
+  Signature = Gallery
 
-  look : (𝔏 : Sig) (ϑ : Operator) → Maybe Arity
-  look [] ϑ = no
-  look (▸δ ϑ? (σ ⇒ τ) ∷ 𝔏) ϑ with String.⟦ ϑ? ≟ ϑ ⟧
+  look : (𝔏 : Signature) (ϑ : OName) → Maybe Frame
+  look ε ϑ = no
+  look (𝔏 ⊗ ▸δ ϑ? ψ) ϑ with String.⟦ ϑ? ≟ ϑ ⟧
   … | ff = look 𝔏 ϑ
-  … | tt = so (σ ⇒ τ)
-open Sig public
-  using (Sig)
+  … | tt = so ψ
+open Signature
+  using (Signature)
 
-module Ctx where
-  Ctx : Set
-  Ctx = List Sig
+module Computad where
+  Computad : Set
+  Computad = List Signature
 
-  look : (Γ : Ctx) (ϑ : Operator) → Maybe Arity
-  look [] ϑ = no
-  look (𝔏 ∷ Γ) ϑ with Sig.look 𝔏 ϑ
-  … | no = look Γ ϑ
-  … | α = α
-open Ctx public
-  using (Ctx)
+  look : (Θ : Computad) (ϑ : OName) → Maybe Frame
+  look ε ϑ = no
+  look (Θ ⊗ 𝔏) ϑ with Signature.look 𝔏 ϑ
+  … | no = look Θ ϑ
+  … | ψ = ψ
+open Computad
+  using (Computad)
+
+data Drop- : (ϡ₀ ϡ₁ ϡ₂ : Canopy) → Set where
+  nil
+    : ∀ {ϡ₀}
+    → Drop- ϡ₀ ε ϡ₀
+  cons
+    : ∀ {ϡ₀ ϡ₁ ψ ρ}
+    → Drop- ϡ₀ ϡ₁ ρ
+    → Drop- (ϡ₀ ⊗ ψ) (ϡ₁ ⊗ ψ) ρ
+
+data Drop+ : (ϰ₀ ϰ₁ : Cluster) (ϡ : Canopy) → Set where
+  nil
+    : Drop+ ε ε ε
+  ext
+    : ∀ {ϰ ϕ ϡ}
+    → Drop+ ε ϰ ϡ
+    → Drop+ ε (ϰ ⊗ ϕ) (ϡ ⊗ (ε ⊸ ε ⊗ ϕ))
+  cons
+    : ∀ {ϰ₀ ϰ₁ ϕ ρ}
+    → Drop+ ϰ₀ ϰ₁ ρ
+    → Drop+ (ϰ₀ ⊗ ϕ) (ϰ₁ ⊗ ϕ) ρ
+
+data Diminish : (ψ₀ ψ₁ : Frame) (ϡ : Canopy) → Set where
+  dim
+    : ∀ {ϡ₀ ϡ₁ ϡ⁻ ϡ⁺ ϰ₀ ϰ₁}
+    → Drop- ϡ₀ ϡ₁ ϡ⁻
+    → Drop+ ϰ₀ ϰ₁ ϡ⁺
+    → Diminish (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) (ϡ⁻ ⊛ ϡ⁺)
+
+data Reframe : (ϡ : Canopy) (ψ : Frame) → Set where
+  nil
+    : Reframe ε (ε ⊸ ε)
+  cons
+    : ∀ {ϡ Γ γ Δ δ}
+    → Reframe ϡ (Γ ⊸ γ)
+    → Reframe (ϡ ⊗ (Δ ⊸ δ)) (Γ ⊛ Δ ⊸ γ ⊛ δ)
 
 mutual
-  data _⊩_∈_ (𝔉 : Ctx) : (ω : Complex) (α : Arity) → Set where
-    stop
-      : ∀ {Γ}
-      → 𝔉 ⊩ stop Γ ∈ Γ ⇒ Γ
-    step
-      : ∀ {𝔣 ω Γ₀ Γ₁ Δ₀ Δ₁}
-      → 𝔉 ⊢ 𝔣 ∈ Γ₀ ⇒ Δ₀
-      → 𝔉 ⊩ ω ∈ Γ₁ ⇒ Δ₁
-      → 𝔉 ⊩ step 𝔣 ω ∈ Γ₀ ++ Γ₁ ⇒ Δ₀ ++ Δ₁
-    cmp⇔
-      : ∀ {ω₀ ω₁ Γ₀ Γ₁ Δ₀ Δ₁}
-      → 𝔉 ⊩ ω₀ ∈ Γ₀ ⇒ Γ₁
-      → 𝔉 ⊩ ω₁ ∈ Δ₀ ⇒ Δ₁
-      → 𝔉 ⊩ cmp⇔ ω₀ ω₁ ∈ Γ₀ ++ Δ₀ ⇒ Γ₁ ++ Δ₁
-    cmp⇕
-      : ∀ {ω₀ ω₁ Γ Δ Θ}
-      → 𝔉 ⊩ ω₁ ∈ Δ ⇒ Θ
-      → 𝔉 ⊩ ω₀ ∈ Γ ⇒ Δ
-      → 𝔉 ⊩ cmp⇕ ω₁ ω₀ ∈ Γ ⇒ Θ
+  data _▸_⊩_⇐_⟖_ (Θ : Computad) (Γ : Context) (ω : Mesh) (ξ : Canopy) (ϡ : Canopy) : Set where
+    check
+      : ∀ {ψ₀ ψ₁}
+      → Θ ▸ Γ ⊩ ω ⇒ ψ₀
+      → Reframe ξ ψ₁
+      → Diminish ψ₀ ψ₁ ϡ
+      → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ
 
-  data _⊢_∈_ (𝔉 : Ctx) : (𝔣 : Face) (α : Arity) → Set where
-    var
-      : ∀ {ϑ α}
-      → Ctx.look 𝔉 ϑ ≡ so α
-      → 𝔉 ⊢ var ϑ ∈ α
-    idn
-      : (Γ : List Face)
-      → 𝔉 ⊢ idn Γ ∈ Γ ⇒ Γ
+  data _▸_⊩_⇒_ (Θ : Computad) (Γ : Context) : (ω : Mesh) (ψ : Frame) → Set where
+    nil
+      : Θ ▸ Γ ⊩ nil ⇒ ε ⊸ ε
+    cons
+      : ∀ {ϕ ω ϡ₀ ϡ₁ ϰ₀ ϰ₁}
+      → Θ ▸ Γ ⊢ ϕ ⇒ ϡ₀ ⊸ ϰ₀
+      → Θ ▸ Γ ⊩ ω ⇒ ϡ₁ ⊸ ϰ₁
+      → Θ ▸ Γ ⊩ cons ϕ ω ⇒ (ϡ₀ ⊛ ϡ₁) ⊸ (ϰ₀ ⊛ ϰ₁)
+
+  data _▸_⊢_⇒_ (Θ : Computad) (Γ : Context) : (ϕ : Face) (ψ : Frame) → Set where
     cut
-      : ∀ {𝔣 ω Γ Δ Ξ}
-      → 𝔉 ⊢ 𝔣 ∈ Ξ ⇒ Δ
-      → 𝔉 ⊩ ω ∈ Γ ⇒ Ξ
-      → 𝔉 ⊢ cut 𝔣 ω ∈ Γ ⇒ Δ
+      : ∀ {ϕ ω ξ ϡ ϰ}
+      → Θ ▸ Γ ⊢ ϕ ⇒ ξ ⊸ ϰ
+      → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ
+      → Θ ▸ Γ ⊢ cut ϕ ω ⇒ ϡ ⊸ ϰ
+    ovar
+      : ∀ {ϑ ψ}
+      → Computad.look Θ ϑ ≡ so ψ
+      → Θ ▸ Γ ⊢ ovar ϑ ⇒ ψ
+    abs
+      : ∀ {Ϡ ϕ ϡ ϰ}
+      → Θ ▸ Γ ⊛ Ϡ ⊢ ϕ ⇒ ϡ ⊸ ϰ
+      → Θ ▸ Γ ⊢ abs Ϡ ϕ ⇒ Ϡ ⊛ ϡ ⊸ ϰ
+    tvar
+      : ∀ {x ψ}
+      → Context.look Γ x ≡ so ψ
+      → Θ ▸ Γ ⊢ tvar x ⇒ ψ
 
-{-# TERMINATING #-}
-mutual
-  complex-eq : (ω₀ ω₁ : Complex) → Decidable (ω₀ ≡ ω₁)
-  complex-eq (stop Γ) (stop Γ′) with List._⊢_≟_ face-eq Γ Γ′
-  complex-eq (stop Γ) (stop Γ′) | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
-  complex-eq (stop Γ) (stop Γ′) | ⊕.inr refl = ⊕.inr refl
-  complex-eq (stop _) (step _ _) = ⊕.inl λ()
-  complex-eq (stop _) (cmp⇔ _ _) = ⊕.inl λ()
-  complex-eq (stop _) (cmp⇕ _ _) = ⊕.inl λ()
-  complex-eq (step _ _) (stop _) = ⊕.inl λ()
-  complex-eq (step 𝔣 ω) (step 𝔣′ ω′) with face-eq 𝔣 𝔣′
-  complex-eq (step 𝔣 ω) (step 𝔣′ ω′) | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  complex-eq (step 𝔣 ω) (step 𝔣′ ω′) | ⊕.inr φ₀ with complex-eq ω ω′
-  complex-eq (step 𝔣 ω) (step 𝔣′ ω′) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  complex-eq (step 𝔣 ω) (step 𝔣′ ω′) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
-  complex-eq (step _ _) (cmp⇔ _ _) = ⊕.inl λ()
-  complex-eq (step _ _) (cmp⇕ _ _) = ⊕.inl λ()
-  complex-eq (cmp⇔ _ _) (stop _) = ⊕.inl λ()
-  complex-eq (cmp⇔ _ _) (step _ _) = ⊕.inl λ()
-  complex-eq (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) with complex-eq ω₀ ω₀′
-  complex-eq (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl}
-  complex-eq (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) | ⊕.inr φ₀ with complex-eq ω₁ ω₁′
-  complex-eq (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl}
-  complex-eq (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
-  complex-eq (cmp⇔ _ _) (cmp⇕ _ _) = ⊕.inl λ()
-  complex-eq (cmp⇕ _ _) (stop _) = ⊕.inl λ()
-  complex-eq (cmp⇕ _ _) (step _ _) = ⊕.inl λ()
-  complex-eq (cmp⇕ _ _) (cmp⇔ _ _) = ⊕.inl λ()
-  complex-eq (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) with complex-eq ω₁ ω₁′
-  complex-eq (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl}
-  complex-eq (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) | ⊕.inr φ₀ with complex-eq ω₀ ω₀′
-  complex-eq (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl}
-  complex-eq (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
-
-  face-eq : (𝔣₀ 𝔣₁ : Face) → Decidable (𝔣₀ ≡ 𝔣₁)
-  face-eq (idn Γ) (idn Γ′) with List._⊢_≟_ face-eq Γ Γ′
-  face-eq (idn Γ) (idn Γ′) | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
-  face-eq (idn Γ) (idn Γ′) | ⊕.inr refl = ⊕.inr refl
-  face-eq (idn _) (cut _ _) = ⊕.inl λ()
-  face-eq (idn _) (var _) = ⊕.inl λ()
-  face-eq (cut _ _) (idn _) = ⊕.inl λ()
-  face-eq (cut 𝔣 ω) (cut 𝔣′ ω′) with face-eq 𝔣 𝔣′
-  face-eq (cut 𝔣 ω) (cut 𝔣′ ω′) | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  face-eq (cut 𝔣 ω) (cut 𝔣′ ω′) | ⊕.inr φ₀ with complex-eq ω ω′
-  face-eq (cut 𝔣 ω) (cut 𝔣′ ω′) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  face-eq (cut 𝔣 ω) (cut 𝔣′ ω′) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
-  face-eq (cut _ _) (var _) = ⊕.inl λ()
-  face-eq (var _) (idn _) = ⊕.inl λ()
-  face-eq (var _) (cut _ _) = ⊕.inl λ()
-  face-eq (var ϑ) (var ϑ′) with ϑ String.≟ ϑ′
-  face-eq (var ϑ) (var ϑ′) | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
-  face-eq (var ϑ) (var ϑ′) | ⊕.inr refl = ⊕.inr refl
+frame-inj
+  : ∀ {ϡ₀ ϡ₁ ϰ₀ ϰ₁}
+  → (ϡ₀ ⊸ ϰ₀) ≡ (ϡ₁ ⊸ ϰ₁)
+  → ϡ₀ ≡ ϡ₁ × ϰ₀ ≡ ϰ₁
+frame-inj refl = refl , refl
 
 mutual
-  face-unique
-    : ∀ {𝔉 𝔣 Γ₀ Γ₁ Δ₀ Δ₁}
-    → 𝔉 ⊢ 𝔣 ∈ Γ₀ ⇒ Δ₀
-    → 𝔉 ⊢ 𝔣 ∈ Γ₁ ⇒ Δ₁
-    → Γ₀ ≡ Γ₁ ⊗ Δ₀ ≡ Δ₁
-  face-unique {Γ₀ = Γ₀} {Γ₁} {Δ₀} {Δ₁} (var ϑ) (var ϑ′) = φ (≡.seq (≡.inv ϑ , ϑ′))
-    where
-      φ : so (Γ₀ ⇒ Δ₀) ≡ so (Γ₁ ⇒ Δ₁) → Γ₀ ≡ Γ₁ ⊗ Δ₀ ≡ Δ₁
-      φ refl = refl , refl
-  face-unique (idn Γ) (idn .Γ) = refl , refl
-  face-unique (cut 𝔣 ω) (cut 𝔣′ ω′) with face-unique 𝔣 𝔣′ | complex-unique ω ω′
-  face-unique (cut 𝔣 ω) (cut 𝔣′ ω′) | refl , refl | refl , refl = refl , refl
+  {-# TERMINATING #-}
+  frame-eq : (ψ₀ ψ₁ : Frame) → Decidable (ψ₀ ≡ ψ₁)
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with list-eq face-eq ϰ₀ ϰ₁ -- FIXME: list-eq needs sized types
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with list-eq frame-eq ϡ₀ ϡ₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
 
-  complex-unique
-    : ∀ {𝔉 ω Γ₀ Γ₁ Δ₀ Δ₁}
-    → 𝔉 ⊩ ω ∈ Γ₀ ⇒ Δ₀
-    → 𝔉 ⊩ ω ∈ Γ₁ ⇒ Δ₁
-    → Γ₀ ≡ Γ₁ ⊗ Δ₀ ≡ Δ₁
-  complex-unique stop stop = refl , refl
-  complex-unique (step 𝔣 ω) (step 𝔣′ ω′) with face-unique 𝔣 𝔣′ | complex-unique ω ω′
-  complex-unique (step 𝔣 ω) (step 𝔣′ ω′) | refl , refl | refl , refl = refl , refl
-  complex-unique (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) with complex-unique ω₀ ω₀′ | complex-unique ω₁ ω₁′
-  complex-unique (cmp⇔ ω₀ ω₁) (cmp⇔ ω₀′ ω₁′) | refl , refl | refl , refl = refl , refl
-  complex-unique (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) with complex-unique ω₁ ω₁′ | complex-unique ω₀ ω₀′
-  complex-unique (cmp⇕ ω₁ ω₀) (cmp⇕ ω₁′ ω₀′) | refl , refl | refl , refl = refl , refl
+  mesh-eq : (ω₀ ω₁ : Mesh) → Decidable (ω₀ ≡ ω₁)
+  mesh-eq nil nil = ⊕.inr refl
+  mesh-eq nil (cons _ _) = ⊕.inl λ()
+  mesh-eq (cons _ _) nil = ⊕.inl λ()
+  mesh-eq (cons ϕ₀ ω₀) (cons ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with mesh-eq ω₀ ω₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+
+  face-eq : (ϕ₀ ϕ₁ : Face) → Decidable (ϕ₀ ≡ ϕ₁)
+  face-eq (cut ϕ₀ ω₀) (cut ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with mesh-eq ω₀ ω₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (cut _ _) (abs _ _) = ⊕.inl λ()
+  face-eq (cut _ _) (ovar _) = ⊕.inl λ()
+  face-eq (cut _ _) (tvar _) = ⊕.inl λ()
+  face-eq (abs _ _) (cut _ _) = ⊕.inl λ()
+  face-eq (abs Ϡ₀ ϕ₀) (abs Ϡ₁ ϕ₁) with list-eq frame-eq Ϡ₀ Ϡ₁
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with face-eq ϕ₀ ϕ₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (abs _ _) (ovar _) = ⊕.inl λ()
+  face-eq (abs _ _) (tvar _) = ⊕.inl λ()
+  face-eq (ovar _) (cut _ _) = ⊕.inl λ()
+  face-eq (ovar _) (abs _ _) = ⊕.inl λ()
+  face-eq (ovar ϑ₀) (ovar ϑ₁) with ϑ₀ String.≟ ϑ₁
+  … | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (ovar _) (tvar _) = ⊕.inl λ()
+  face-eq (tvar _) (cut _ _) = ⊕.inl λ()
+  face-eq (tvar _) (abs _ _) = ⊕.inl λ()
+  face-eq (tvar _) (ovar _) = ⊕.inl λ()
+  face-eq (tvar x₀) (tvar x₁) with x₀ Nat.≟ x₁
+  … | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+
+unique-drop-
+  : ∀ {ϡ₀ ϡ₁ ϡ₂₀ ϡ₂₁}
+  → Drop- ϡ₀ ϡ₁ ϡ₂₀
+  → Drop- ϡ₀ ϡ₁ ϡ₂₁
+  → ϡ₂₀ ≡ ϡ₂₁
+unique-drop- nil nil = refl
+unique-drop- (cons φ₀) (cons φ₁) with unique-drop- φ₀ φ₁
+unique-drop- (cons φ₀) (cons φ₁) | refl = refl
+
+unique-drop+
+  : ∀ {ϰ₀ ϰ₁ ϡ₂₀ ϡ₂₁}
+  → Drop+ ϰ₀ ϰ₁ ϡ₂₀
+  → Drop+ ϰ₀ ϰ₁ ϡ₂₁
+  → ϡ₂₀ ≡ ϡ₂₁
+unique-drop+ nil nil = refl
+unique-drop+ (ext φ₀) (ext φ₁) with unique-drop+ φ₀ φ₁
+unique-drop+ (ext φ₀) (ext φ₁) | refl = refl
+unique-drop+ (cons φ₀) (cons φ₁) with unique-drop+ φ₀ φ₁
+unique-drop+ (cons φ₀) (cons φ₁) | refl = refl
+
+unique-diminish
+  : ∀ {ψ₀ ψ₁ ϡ₀ ϡ₁}
+  → Diminish ψ₀ ψ₁ ϡ₀
+  → Diminish ψ₀ ψ₁ ϡ₁
+  → ϡ₀ ≡ ϡ₁
+unique-diminish (dim φ₀⁻ φ₀⁺) (dim φ₁⁻ φ₁⁺) with unique-drop- φ₀⁻ φ₁⁻ | unique-drop+ φ₀⁺ φ₁⁺
+unique-diminish (dim φ₀⁻ φ₀⁺) (dim φ₁⁻ φ₁⁺) | refl | refl = refl
+
+unique-reframe
+  : ∀ {ξ ψ₀ ψ₁}
+  → Reframe ξ ψ₀
+  → Reframe ξ ψ₁
+  → ψ₀ ≡ ψ₁
+unique-reframe nil nil = refl
+unique-reframe (cons φ₀) (cons φ₁) with unique-reframe φ₀ φ₁
+unique-reframe (cons φ₀) (cons φ₁) | refl = refl
 
 mutual
-  face-inf-chk
-    : (𝔉 : Ctx)
-    → (Δ : List Face)
-    → (𝔣 : Face)
-    → Decidable (Σ (List Face) λ Γ → 𝔉 ⊢ 𝔣 ∈ Γ ⇒ Δ)
-  face-inf-chk 𝔉 Δ 𝔣 with face-inf-inf 𝔉 𝔣
-  face-inf-chk 𝔉 Δ 𝔣 | ⊕.inl κ₀ = ⊕.inl λ { (Γ ▸ ⊢𝔣) → κ₀ (Γ ▸ Δ ▸ ⊢𝔣) }
-  face-inf-chk 𝔉 Δ 𝔣 | ⊕.inr (Γ ▸ Δ′ ▸ ⊢𝔣) with face-eq List.⊢ Δ ≟ Δ′
-  face-inf-chk 𝔉 Δ 𝔣 | ⊕.inr (Γ ▸ Δ′ ▸ ⊢𝔣) | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ ⊢𝔣′) → κ₁ (⊗.snd (face-unique ⊢𝔣′ ⊢𝔣)) }
-  face-inf-chk 𝔉 .Δ′ 𝔣 | ⊕.inr (Γ ▸ Δ′ ▸ ⊢𝔣) | ⊕.inr refl = ⊕.inr (Γ ▸ ⊢𝔣)
+  unique-check-mesh
+    : ∀ {Θ Γ ω ξ ϡ₀ ϡ₁}
+    → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₀
+    → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₁
+    → ϡ₀ ≡ ϡ₁
+  unique-check-mesh (check ⊢ω₀ ⊢ref₀ ⊢dim₀) (check ⊢ω₁ ⊢ref₁ ⊢dim₁) with unique-infer-mesh ⊢ω₀ ⊢ω₁ | unique-reframe ⊢ref₀ ⊢ref₁
+  … | refl | refl with unique-diminish ⊢dim₀ ⊢dim₁
+  unique-check-mesh (check ⊢ω₀ ⊢ref₀ ⊢dim₀) (check ⊢ω₁ ⊢ref₁ ⊢dim₁) | refl | refl | refl = refl
 
-  face-inf-inf
-    : (𝔉 : Ctx)
-    → (𝔣 : Face)
-    → Decidable (Σ (List Face) λ Γ → Σ (List Face) λ Δ → 𝔉 ⊢ 𝔣 ∈ Γ ⇒ Δ)
-  face-inf-inf 𝔉 (idn Γ) = ⊕.inr (Γ ▸ Γ ▸ idn Γ)
-  face-inf-inf 𝔉 (cut 𝔣 ω) with face-inf-inf 𝔉 𝔣
-  face-inf-inf 𝔉 (cut 𝔣 ω) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ _ ▸ cut ⊢𝔣 ⊢ω) → κ₀ (_ ▸ _ ▸ ⊢𝔣) }
-  face-inf-inf 𝔉 (cut 𝔣 ω) | ⊕.inr (Ξ ▸ Δ ▸ ⊢𝔣) with complex-inf-chk 𝔉 Ξ ω
-  face-inf-inf 𝔉 (cut 𝔣 ω) | ⊕.inr (Ξ ▸ Δ ▸ ⊢𝔣) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ _ ▸ cut ⊢𝔣′ ⊢ω) → κ₁ (_ ▸ ≡.coe* (λ X → _ ⊩ _ ∈ _ ⇒ X) (⊗.fst (face-unique ⊢𝔣′ ⊢𝔣)) ⊢ω) }
-  face-inf-inf 𝔉 (cut 𝔣 ω) | ⊕.inr (_ ▸ _ ▸ ⊢𝔣) | ⊕.inr (_ ▸ ⊢ω) =
-    ⊕.inr (_ ▸ _ ▸ cut ⊢𝔣 ⊢ω)
-  face-inf-inf 𝔉 (var ϑ) with Ctx.look 𝔉 ϑ | inspect (Ctx.look 𝔉) ϑ
-  face-inf-inf 𝔉 (var ϑ) | no | [ ⊬ϑ ] =
-    ⊕.inl λ { (_ ▸ _ ▸ var ⊢ϑ) → Maybe.⊢.no≢so (≡.seq (≡.inv ⊬ϑ , ⊢ϑ)) }
-  face-inf-inf 𝔉 (var ϑ) | so (_ ⇒ _) | [ ⊢ϑ ] =
-    ⊕.inr (_ ▸ _ ▸ var ⊢ϑ)
+  unique-infer-mesh
+    : ∀ {Θ Γ ω ψ₀ ψ₁}
+    → Θ ▸ Γ ⊩ ω ⇒ ψ₀
+    → Θ ▸ Γ ⊩ ω ⇒ ψ₁
+    → ψ₀ ≡ ψ₁
+  unique-infer-mesh nil nil = refl
+  unique-infer-mesh (cons ⊢ϕ₀ ⊢ω₀) (cons ⊢ϕ₁ ⊢ω₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁ | unique-infer-mesh ⊢ω₀ ⊢ω₁
+  unique-infer-mesh (cons ⊢ϕ₀ ⊢ω₀) (cons ⊢ϕ₁ ⊢ω₁) | refl | refl = refl
 
-  complex-inf-chk
-    : (𝔉 : Ctx)
-    → (Δ : List Face)
-    → (ω : Complex)
-    → Decidable (Σ (List Face) λ Γ → 𝔉 ⊩ ω ∈ Γ ⇒ Δ)
-  complex-inf-chk 𝔉 Δ (stop Γ) with face-eq List.⊢ Γ ≟ Δ
-  complex-inf-chk 𝔉 Δ (stop Γ) | ⊕.inl κ = ⊕.inl λ { (_ ▸ stop) → κ refl }
-  complex-inf-chk 𝔉 Δ (stop Γ) | ⊕.inr refl = ⊕.inr (Δ ▸ stop)
-  complex-inf-chk 𝔉 Δ (step 𝔣 ω) with complex-inf-inf 𝔉 (step 𝔣 ω)
-  complex-inf-chk 𝔉 Δ (step 𝔣 ω) | ⊕.inl κ =
-    ⊕.inl λ { (_ ▸ step ⊢𝔣 ⊢ω) → κ (_ ▸ _ ▸ step ⊢𝔣 ⊢ω) }
-  complex-inf-chk 𝔉 Δ (step 𝔣 ω) | ⊕.inr (_ ▸ Δ′ ▸ step ⊢𝔣 ⊢ω) with face-eq List.⊢ Δ′ ≟ Δ
-  complex-inf-chk 𝔉 Δ (step 𝔣 ω) | ⊕.inr (_ ▸ Δ′ ▸ step ⊢𝔣 ⊢ω) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ step ⊢𝔣′ ⊢ω′) → κ₁ (≡.ap² (λ { (xs , ys) → xs ++ ys}) (⊗.snd (face-unique ⊢𝔣 ⊢𝔣′) , ⊗.snd (complex-unique ⊢ω ⊢ω′))) }
-  complex-inf-chk 𝔉 Δ (step 𝔣 ω) | ⊕.inr (_ ▸ _ ▸ step ⊢𝔣 ⊢ω) | ⊕.inr refl =
-    ⊕.inr (_ ▸ step ⊢𝔣 ⊢ω)
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) with complex-inf-inf 𝔉 ω₀
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ cmp⇔ ⊢ω₀ _) → κ₀ (_ ▸ _ ▸ ⊢ω₀) }
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) | ⊕.inr (_ ▸ _ ▸ ⊢ω₀) with complex-inf-inf 𝔉 ω₁
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) | ⊕.inr (_ ▸ _ ▸ ⊢ω₀) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ cmp⇔ _ ⊢ω₁) → κ₁ (_ ▸ _ ▸ ⊢ω₁) }
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) | ⊕.inr (Γ₀ ▸ Γ₁ ▸ ⊢ω₀) | ⊕.inr (Δ₀ ▸ Δ₁ ▸ ⊢ω₁) with face-eq List.⊢ Γ₁ ++ Δ₁ ≟ Δ
-  complex-inf-chk 𝔉 Δ (cmp⇔ ω₀ ω₁) | ⊕.inr (Γ₀ ▸ Γ₁ ▸ ⊢ω₀) | ⊕.inr (Δ₀ ▸ Δ₁ ▸ ⊢ω₁) | ⊕.inl κ₂ =
-    ⊕.inl λ { (_ ▸ cmp⇔ ⊢ω₀′ ⊢ω₁′) → κ₂ (≡.ap² (λ { (xs , ys) → xs ++ ys }) (⊗.snd (complex-unique ⊢ω₀ ⊢ω₀′) , ⊗.snd (complex-unique ⊢ω₁ ⊢ω₁′))) }
-  complex-inf-chk 𝔉 .(Γ₁ ++ Δ₁) (cmp⇔ ω₀ ω₁) | ⊕.inr (Γ₀ ▸ Γ₁ ▸ ⊢ω₀) | (⊕.inr (Δ₀ ▸ Δ₁ ▸ ⊢ω₁)) | ⊕.inr refl =
-    ⊕.inr (_ ▸ cmp⇔ ⊢ω₀ ⊢ω₁)
-  complex-inf-chk 𝔉 Δ (cmp⇕ ω₁ ω₀) with complex-inf-chk 𝔉 Δ ω₁
-  complex-inf-chk 𝔉 Δ (cmp⇕ ω₁ ω₀) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ cmp⇕ ⊢ω₁ _) → κ₀ (_ ▸ ⊢ω₁) }
-  complex-inf-chk 𝔉 Δ (cmp⇕ ω₁ ω₀) | ⊕.inr (Ξ ▸ ⊢ω₁) with complex-inf-chk 𝔉 Ξ ω₀
-  complex-inf-chk 𝔉 Δ (cmp⇕ ω₁ ω₀) | ⊕.inr (Ξ ▸ ⊢ω₁) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ cmp⇕ ⊢ω₁′ ⊢ω₀) → κ₁ (_ ▸ ≡.coe* (λ X → _ ⊩ _ ∈ _ ⇒ X) (⊗.fst (complex-unique ⊢ω₁′ ⊢ω₁)) ⊢ω₀) }
-  complex-inf-chk 𝔉 Δ (cmp⇕ ω₁ ω₀) | ⊕.inr (_ ▸ ⊢ω₁) | ⊕.inr (_ ▸ ⊢ω₀) =
-    ⊕.inr (_ ▸ cmp⇕ ⊢ω₁ ⊢ω₀)
+  unique-infer-face
+    : ∀ {Θ Γ ϕ ψ₀ ψ₁}
+    → Θ ▸ Γ ⊢ ϕ ⇒ ψ₀
+    → Θ ▸ Γ ⊢ ϕ ⇒ ψ₁
+    → ψ₀ ≡ ψ₁
+  unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁
+  unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) | refl with unique-check-mesh ⊢ω₀ ⊢ω₁
+  unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) | refl | refl = refl
+  unique-infer-face (ovar ⊢ϑ₀) (ovar ⊢ϑ₁) = Maybe.⊢.so-inj (≡.seq (≡.inv ⊢ϑ₀ , ⊢ϑ₁))
+  unique-infer-face (abs ⊢ϕ₀) (abs ⊢ϕ₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁
+  unique-infer-face (abs ⊢ϕ₀) (abs ⊢ϕ₁) | refl = refl
+  unique-infer-face (tvar ⊢x₀) (tvar ⊢x₁) = Maybe.⊢.so-inj (≡.seq (≡.inv ⊢x₀ , ⊢x₁))
 
-  complex-inf-inf
-    : (𝔉 : Ctx)
-    → (ω : Complex)
-    → Decidable (Σ (List Face) λ Γ → Σ (List Face) λ Δ → 𝔉 ⊩ ω ∈ Γ ⇒ Δ)
-  complex-inf-inf 𝔉 (stop Γ) = ⊕.inr (_ ▸ _ ▸ stop)
-  complex-inf-inf 𝔉 (step 𝔣 ω) with face-inf-inf 𝔉 𝔣
-  complex-inf-inf 𝔉 (step 𝔣 ω) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ _ ▸ step ⊢𝔣 ⊢ω) → κ₀ (_ ▸ _ ▸ ⊢𝔣) }
-  complex-inf-inf 𝔉 (step 𝔣 ω) | ⊕.inr (Γ₀ ▸ Δ₀ ▸ ⊢𝔣) with complex-inf-inf 𝔉 ω
-  complex-inf-inf 𝔉 (step 𝔣 ω) | ⊕.inr (Γ₀ ▸ Δ₀ ▸ ⊢𝔣) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ _ ▸ step ⊢𝔣′ ⊢ω) → κ₁ (_ ▸ _ ▸ ⊢ω) }
-  complex-inf-inf 𝔉 (step 𝔣 ω) | ⊕.inr (Γ₀ ▸ Δ₀ ▸ ⊢𝔣) | ⊕.inr (Γ₁ ▸ Δ₁ ▸ ⊢ω) =
-    ⊕.inr (_ ▸ _ ▸ step ⊢𝔣 ⊢ω)
-  complex-inf-inf 𝔉 (cmp⇔ ω₀ ω₁) with complex-inf-inf 𝔉 ω₀
-  complex-inf-inf 𝔉 (cmp⇔ ω₀ ω₁) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ _ ▸ cmp⇔ ⊢ω₀ ⊢ω₁) → κ₀ (_ ▸ _ ▸ ⊢ω₀) }
-  complex-inf-inf 𝔉 (cmp⇔ ω₀ ω₁) | ⊕.inr (_ ▸ _ ▸ ⊢ω₀) with complex-inf-inf 𝔉 ω₁
-  complex-inf-inf 𝔉 (cmp⇔ ω₀ ω₁) | ⊕.inr (_ ▸ _ ▸ ⊢ω₀) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ _ ▸ cmp⇔ ⊢ω₀′ ⊢ω₁) → κ₁ (_ ▸ _ ▸ ⊢ω₁) }
-  complex-inf-inf 𝔉 (cmp⇔ ω₀ ω₁) | ⊕.inr (_ ▸ _ ▸ ⊢ω₀) | ⊕.inr (_ ▸ _ ▸ ⊢ω₁) =
-    ⊕.inr (_ ▸ _ ▸ cmp⇔ ⊢ω₀ ⊢ω₁)
-  complex-inf-inf 𝔉 (cmp⇕ ω₁ ω₀) with complex-inf-inf 𝔉 ω₁
-  complex-inf-inf 𝔉 (cmp⇕ ω₁ ω₀) | ⊕.inl κ₀ =
-    ⊕.inl λ { (_ ▸ _ ▸ cmp⇕ ⊢ω₁ ⊢ω₀) → κ₀ (_ ▸ _ ▸ ⊢ω₁) }
-  complex-inf-inf 𝔉 (cmp⇕ ω₁ ω₀) | ⊕.inr (Ξ ▸ Δ ▸ ⊢ω₁) with complex-inf-chk 𝔉 Ξ ω₀
-  complex-inf-inf 𝔉 (cmp⇕ ω₁ ω₀) | ⊕.inr (Ξ ▸ Δ ▸ ⊢ω₁) | ⊕.inl κ₁ =
-    ⊕.inl λ { (_ ▸ _ ▸ cmp⇕ ⊢ω₁′ ⊢ω₀) → κ₁ (_ ▸ ≡.coe* (λ X → _ ⊩ _ ∈ _ ⇒ X) (⊗.fst (complex-unique ⊢ω₁′ ⊢ω₁)) ⊢ω₀) }
-  complex-inf-inf 𝔉 (cmp⇕ ω₁ ω₀) | ⊕.inr (_ ▸ _ ▸ ⊢ω₁) | ⊕.inr (_ ▸ ⊢ω₀) =
-    ⊕.inr (_ ▸ _ ▸ cmp⇕ ⊢ω₁ ⊢ω₀)
+reframe : (ϡ : Canopy) → Σ Frame (Reframe ϡ)
+reframe ε = _ ▸ nil
+reframe (ϡ ⊗ (Δ ⊸ δ)) with reframe ϡ
+… | (Γ ⊸ γ) ▸ φ = (Γ ⊛ Δ ⊸ γ ⊛ δ) ▸ cons φ
 
-face-inf : Ctx → Face → Maybe Arity
-face-inf 𝔉 𝔣 with face-inf-inf 𝔉 𝔣
-face-inf 𝔉 𝔣 | ⊕.inl _ = no
-face-inf 𝔉 𝔣 | ⊕.inr (Γ ▸ Δ ▸ _) = so (Γ ⇒ Δ)
+drop- : (ϡ₀ ϡ₁ : Canopy) → Decidable (Σ Canopy (Drop- ϡ₀ ϡ₁))
+drop- ϡ₀ ε = ⊕.inr (_ ▸ nil)
+drop- ε (ϡ₁ ⊗ ψ₁) = ⊕.inl λ { (_ ▸ ()) }
+drop- (ϡ₀ ⊗ ψ₀) (ϡ₁ ⊗ ψ₁) with frame-eq ψ₀ ψ₁
+… | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
+… | ⊕.inr refl with drop- ϡ₀ ϡ₁
+… | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons ρ) → κ₁ (_ ▸ ρ) }
+… | ⊕.inr (_ ▸ ρ) = ⊕.inr (_ ▸ cons ρ)
+
+drop+ : (ϰ₀ ϰ₁ : Cluster) → Decidable (Σ Canopy (Drop+ ϰ₀ ϰ₁))
+drop+ ε ε = ⊕.inr (_ ▸ nil)
+drop+ ε (ϰ₁ ⊗ ϕ₁) with drop+ ε ϰ₁
+… | ⊕.inl κ = ⊕.inl λ { (_ ▸ ext φ) → κ (_ ▸ φ) }
+… | ⊕.inr (_ ▸ φ) = ⊕.inr (_ ▸ ext φ)
+drop+ (ϰ₀ ⊗ ϕ₀) ε = ⊕.inl λ { (_ ▸ ()) }
+drop+ (ϰ₀ ⊗ ϕ₀) (ϰ₁ ⊗ ϕ₁) with face-eq ϕ₀ ϕ₁
+… | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
+… | ⊕.inr refl with drop+ ϰ₀ ϰ₁
+… | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons φ₁) → κ₁ (_ ▸ φ₁) }
+… | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₁)
+
+diminish : (ψ₀ ψ₁ : Frame) → Decidable (Σ Canopy (Diminish ψ₀ ψ₁))
+diminish (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with drop- ϡ₀ ϡ₁
+… | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ dim φ₀ φ₁) → κ₀ (_ ▸ φ₀) }
+… | ⊕.inr (_ ▸ φ₀) with drop+ ϰ₀ ϰ₁
+… | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ dim _ φ₁) → κ₁ (_ ▸ φ₁) }
+… | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ dim φ₀ φ₁)
+
+mutual
+  ⊢check-mesh
+    : ∀ Θ Γ ω ξ
+    → Decidable (Σ (List Frame) λ ϡ → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ)
+  ⊢check-mesh Θ Γ ω ξ with ⊢infer-mesh Θ Γ ω
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ check φ₀ _ _) → κ₀ (_ ▸ φ₀) }
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) with reframe ξ
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ with diminish ψ₀ ψ₁
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ | ⊕.inl κ₂ =
+      ⊕.inl λ { (_ ▸ check φ₀′ φ₁′ φ₂) → κ₂ (_ ▸ ≡.coe* (λ X → Diminish X _ _) (unique-infer-mesh φ₀′ φ₀) (≡.coe* (λ Y → Diminish _ Y _) (unique-reframe φ₁′ φ₁) φ₂)) }
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ | ⊕.inr (_ ▸ φ₂) = ⊕.inr (_ ▸ check φ₀ φ₁ φ₂)
+
+  ⊢infer-mesh
+    : ∀ Θ Γ ω
+    → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊩ ω ⇒ ψ)
+  ⊢infer-mesh Θ Γ nil = ⊕.inr (_ ▸ nil)
+  ⊢infer-mesh Θ Γ (cons ϕ ω) with ⊢infer-face Θ Γ ϕ
+  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons φ₀ φ₁) → κ₀ (_ ▸ φ₀) }
+  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr φ₀ with ⊢infer-mesh Θ Γ ω
+  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons _ φ₁) → κ₁ (_ ▸ φ₁) }
+  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr (_ ⊸ _ ▸ φ₀) | ⊕.inr (_ ⊸ _ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₀ φ₁)
+
+  ⊢infer-face
+    : ∀ Θ Γ ϕ
+    → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊢ ϕ ⇒ ψ)
+  ⊢infer-face Θ Γ (cut ϕ ω) with ⊢infer-face Θ Γ ϕ
+  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cut φ₀ _) → κ₀ (_ ▸ φ₀) }
+  … | ⊕.inr (ξ ⊸ _ ▸ φ₀) with ⊢check-mesh Θ Γ ω ξ
+  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cut φ₀′ φ₁) → κ₁ (_ ▸ ≡.coe* (λ X → _ ▸ _ ⊩ _ ⇐ X ⟖ _) (⊗.fst (frame-inj (unique-infer-face φ₀′ φ₀))) φ₁) }
+  … | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ cut φ₀ φ₁)
+  ⊢infer-face Θ Γ (abs Ϡ ϕ) with ⊢infer-face Θ (Γ ⊛ Ϡ) ϕ
+  … | ⊕.inl κ = ⊕.inl λ { (_ ▸ abs φ) → κ (_ ▸ φ) }
+  … | ⊕.inr (_ ⊸ _ ▸ φ) = ⊕.inr (_ ▸ abs φ)
+  ⊢infer-face Θ Γ (ovar ϑ) with Computad.look Θ ϑ | inspect (Computad.look Θ) ϑ
+  ⊢infer-face Θ Γ (ovar ϑ) | no   | [ φ ] = ⊕.inl λ { (_ ▸ ovar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
+  ⊢infer-face Θ Γ (ovar ϑ) | so ψ | [ φ ] = ⊕.inr (_ ▸ ovar φ)
+  ⊢infer-face Θ Γ (tvar x) with Context.look Γ x | inspect (Context.look Γ) x
+  ⊢infer-face Θ Γ (tvar x) | no   | [ φ ] = ⊕.inl λ { (_ ▸ tvar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
+  ⊢infer-face Θ Γ (tvar x) | so ψ | [ φ ] = ⊕.inr (_ ▸ tvar φ)
+
+infer-mesh : Computad → Context → Mesh → Maybe Frame
+infer-mesh Θ Γ ω with ⊢infer-mesh Θ Γ ω
+… | ⊕.inl _ = no
+… | ⊕.inr (ψ ▸ _) = so ψ
+
+infer-face : Computad → Context → Face → Maybe Frame
+infer-face Θ Γ ϕ with ⊢infer-face Θ Γ ϕ
+… | ⊕.inl _ = no
+… | ⊕.inr (ψ ▸ _) = so ψ
 
 module Test where
-  𝔏₀ : Sig
+  𝔏₀ : Signature
   𝔏₀ =
-    let Δ = [] in
-    let Δ = ▸δ "bool" ([] ⇒ []) ∷ Δ in
+    let Δ = ε in
+    let Δ = Δ ⊗ ▸δ "bool" (ε ⊸ ε) in
     Δ
 
-  𝔏₁ : Sig
+  𝔏₁ : Signature
   𝔏₁ =
-    let Δ = [] in
-    let Δ = ▸δ "ff" ([] ⇒ var "bool" ∷ []) ∷ Δ in
-    let Δ = ▸δ "tt" ([] ⇒ var "bool" ∷ []) ∷ Δ in
-    let Δ = ▸δ "and" (var "bool" ∷ var "bool" ∷ [] ⇒ var "bool" ∷ []) ∷ Δ in
+    let Δ = ε in
+    let Δ = Δ ⊗ ▸δ "ff" (ε ⊸ ε ⊗ ovar "bool") in
+    let Δ = Δ ⊗ ▸δ "tt" (ε ⊸ ε ⊗ ovar "bool") in
+    let Δ = Δ ⊗ ▸δ "not" (ε ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊸ ε ⊗ ovar "bool") in
+    let Δ = Δ ⊗ ▸δ "and" (ε ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊸ (ε ⊗ ovar "bool")) in
     Δ
 
-  𝔏₂ : Sig
-  𝔏₂ =
-    let Δ = [] in
-    let Δ = ▸δ "and/ff/ff" (cut (var "and") (step (var "ff") (step (var "ff") (stop []))) ∷ [] ⇒ var "bool" ∷ []) ∷ Δ in
-    Δ
+  Θ : Computad
+  Θ = ε ⊗ 𝔏₀ ⊗ 𝔏₁
 
-  𝔉 : Ctx
-  𝔉 = 𝔏₂ ∷ 𝔏₁ ∷ 𝔏₀ ∷ []
+  term₀ : Face
+  term₀ = cut (ovar "and") (cons (ovar "ff") (cons (ovar "not") nil))
 
-  test₀ : _
-  test₀ = face-inf 𝔉 (var "bool")
+  term₁ : Face
+  term₁ = cut (ovar "and") (cons (ovar "ff") (cons (abs (ε ⊗ (ε ⊸ ε ⊗ ovar "bool")) (cut (ovar "not") (cons (tvar 0) nil))) nil))
 
-  test₁ : _
-  test₁ = face-inf 𝔉 (cut (var "and") (step (var "ff") (step (var "ff") (stop []))))
+  test : infer-face Θ ε term₀ ≡ infer-face Θ ε term₁
+  test = refl
