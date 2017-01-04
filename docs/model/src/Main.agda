@@ -61,8 +61,8 @@ mutual
   data Mesh : Set where
     nil : Mesh
     cons : (ϕ : Face) (ω : Mesh) → Mesh
-    -- cut⇕ : (ω₀ : Mesh) (ω₁ : Mesh) → Mesh
-    -- cut⊗ : (ω₁ : Mesh) (ω₀ : Mesh) → Mesh
+    cut⊗ : (ω₀ : Mesh) (ω₁ : Mesh) → Mesh
+    cut⇔ : (ω₁ : Mesh) (ω₀ : Mesh) → Mesh
 
   data Face : Set where
     cut : (ϕ : Face) (ω : Mesh) → Face
@@ -173,7 +173,17 @@ mutual
       : ∀ {ϕ ω ϡ₀ ϡ₁ ϰ₀ ϰ₁}
       → Θ ▸ Γ ⊢ ϕ ⇒ ϡ₀ ⊸ ϰ₀
       → Θ ▸ Γ ⊩ ω ⇒ ϡ₁ ⊸ ϰ₁
-      → Θ ▸ Γ ⊩ cons ϕ ω ⇒ (ϡ₀ ⊛ ϡ₁) ⊸ (ϰ₀ ⊛ ϰ₁)
+      → Θ ▸ Γ ⊩ cons ϕ ω ⇒ ϡ₀ ⊛ ϡ₁ ⊸ ϰ₀ ⊛ ϰ₁
+    cut⊗
+      : ∀ {ω₀ ω₁ ϡ₀ ϡ₁ ϰ₀ ϰ₁}
+      → Θ ▸ Γ ⊩ ω₀ ⇒ ϡ₀ ⊸ ϰ₀
+      → Θ ▸ Γ ⊩ ω₁ ⇒ ϡ₁ ⊸ ϰ₁
+      → Θ ▸ Γ ⊩ cut⊗ ω₀ ω₁ ⇒ ϡ₀ ⊛ ϡ₁ ⊸ ϰ₀ ⊛ ϰ₁
+    cut⇔
+      : ∀ {ω₀ ω₁ ξ ϡ ϰ}
+      → Θ ▸ Γ ⊩ ω₀ ⇒ ξ ⊸ ϰ
+      → Θ ▸ Γ ⊩ ω₁ ⇐ ξ ⟖ ϡ
+      → Θ ▸ Γ ⊩ cut⇔ ω₀ ω₁ ⇒ ϡ ⊸ ϰ
 
   data _▸_⊢_⇒_ (Θ : Computad) (Γ : Context) : (ϕ : Face) (ψ : Frame) → Set where
     cut
@@ -212,10 +222,30 @@ mutual
   mesh-eq : (ω₀ ω₁ : Mesh) → Decidable (ω₀ ≡ ω₁)
   mesh-eq nil nil = ⊕.inr refl
   mesh-eq nil (cons _ _) = ⊕.inl λ()
+  mesh-eq nil (cut⊗ _ _) = ⊕.inl λ()
+  mesh-eq nil (cut⇔ _ _) = ⊕.inl λ()
   mesh-eq (cons _ _) nil = ⊕.inl λ()
   mesh-eq (cons ϕ₀ ω₀) (cons ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
   … | ⊕.inr refl with mesh-eq ω₀ ω₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+  mesh-eq (cons _ _) (cut⇔ _ _) = ⊕.inl λ()
+  mesh-eq (cons _ _) (cut⊗ _ _) = ⊕.inl λ()
+  mesh-eq (cut⇔ _ _) nil = ⊕.inl λ()
+  mesh-eq (cut⇔ _ _) (cons _ _) = ⊕.inl λ()
+  mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with mesh-eq ω₁ ω₁′
+  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
+  … | ⊕.inr refl = ⊕.inr refl
+  mesh-eq (cut⇔ _ _) (cut⊗ _ _) = ⊕.inl λ()
+  mesh-eq (cut⊗ _ _) nil = ⊕.inl λ()
+  mesh-eq (cut⊗ _ _) (cons _ _) = ⊕.inl λ()
+  mesh-eq (cut⊗ _ _) (cut⇔ _ _) = ⊕.inl λ()
+  mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
+  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
+  … | ⊕.inr refl with mesh-eq ω₁ ω₁′
   … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
   … | ⊕.inr refl = ⊕.inr refl
 
@@ -249,73 +279,50 @@ mutual
   … | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
   … | ⊕.inr refl = ⊕.inr refl
 
-unique-drop-
-  : ∀ {ϡ₀ ϡ₁ ϡ₂₀ ϡ₂₁}
-  → Drop- ϡ₀ ϡ₁ ϡ₂₀
-  → Drop- ϡ₀ ϡ₁ ϡ₂₁
-  → ϡ₂₀ ≡ ϡ₂₁
+unique-drop- : ∀ {ϡ₀ ϡ₁ ϡ₂₀ ϡ₂₁} → Drop- ϡ₀ ϡ₁ ϡ₂₀ → Drop- ϡ₀ ϡ₁ ϡ₂₁ → ϡ₂₀ ≡ ϡ₂₁
 unique-drop- nil nil = refl
 unique-drop- (cons φ₀) (cons φ₁) with unique-drop- φ₀ φ₁
 unique-drop- (cons φ₀) (cons φ₁) | refl = refl
 
-unique-drop+
-  : ∀ {ϰ₀ ϰ₁ ϡ₂₀ ϡ₂₁}
-  → Drop+ ϰ₀ ϰ₁ ϡ₂₀
-  → Drop+ ϰ₀ ϰ₁ ϡ₂₁
-  → ϡ₂₀ ≡ ϡ₂₁
+unique-drop+ : ∀ {ϰ₀ ϰ₁ ϡ₂₀ ϡ₂₁} → Drop+ ϰ₀ ϰ₁ ϡ₂₀ → Drop+ ϰ₀ ϰ₁ ϡ₂₁ → ϡ₂₀ ≡ ϡ₂₁
 unique-drop+ nil nil = refl
 unique-drop+ (ext φ₀) (ext φ₁) with unique-drop+ φ₀ φ₁
 unique-drop+ (ext φ₀) (ext φ₁) | refl = refl
 unique-drop+ (cons φ₀) (cons φ₁) with unique-drop+ φ₀ φ₁
 unique-drop+ (cons φ₀) (cons φ₁) | refl = refl
 
-unique-diminish
-  : ∀ {ψ₀ ψ₁ ϡ₀ ϡ₁}
-  → Diminish ψ₀ ψ₁ ϡ₀
-  → Diminish ψ₀ ψ₁ ϡ₁
-  → ϡ₀ ≡ ϡ₁
+unique-diminish : ∀ {ψ₀ ψ₁ ϡ₀ ϡ₁} → Diminish ψ₀ ψ₁ ϡ₀ → Diminish ψ₀ ψ₁ ϡ₁ → ϡ₀ ≡ ϡ₁
 unique-diminish (dim φ₀⁻ φ₀⁺) (dim φ₁⁻ φ₁⁺) with unique-drop- φ₀⁻ φ₁⁻ | unique-drop+ φ₀⁺ φ₁⁺
 unique-diminish (dim φ₀⁻ φ₀⁺) (dim φ₁⁻ φ₁⁺) | refl | refl = refl
 
-unique-reframe
-  : ∀ {ξ ψ₀ ψ₁}
-  → Reframe ξ ψ₀
-  → Reframe ξ ψ₁
-  → ψ₀ ≡ ψ₁
+unique-reframe : ∀ {ξ ψ₀ ψ₁} → Reframe ξ ψ₀ → Reframe ξ ψ₁ → ψ₀ ≡ ψ₁
 unique-reframe nil nil = refl
 unique-reframe (cons φ₀) (cons φ₁) with unique-reframe φ₀ φ₁
 unique-reframe (cons φ₀) (cons φ₁) | refl = refl
 
 mutual
-  unique-check-mesh
-    : ∀ {Θ Γ ω ξ ϡ₀ ϡ₁}
-    → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₀
-    → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₁
-    → ϡ₀ ≡ ϡ₁
+  unique-check-mesh : ∀ {Θ Γ ω ξ ϡ₀ ϡ₁} → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₀ → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ₁ → ϡ₀ ≡ ϡ₁
   unique-check-mesh (check ⊢ω₀ ⊢ref₀ ⊢dim₀) (check ⊢ω₁ ⊢ref₁ ⊢dim₁) with unique-infer-mesh ⊢ω₀ ⊢ω₁ | unique-reframe ⊢ref₀ ⊢ref₁
   … | refl | refl with unique-diminish ⊢dim₀ ⊢dim₁
   unique-check-mesh (check ⊢ω₀ ⊢ref₀ ⊢dim₀) (check ⊢ω₁ ⊢ref₁ ⊢dim₁) | refl | refl | refl = refl
 
-  unique-infer-mesh
-    : ∀ {Θ Γ ω ψ₀ ψ₁}
-    → Θ ▸ Γ ⊩ ω ⇒ ψ₀
-    → Θ ▸ Γ ⊩ ω ⇒ ψ₁
-    → ψ₀ ≡ ψ₁
+  unique-infer-mesh : ∀ {Θ Γ ω ψ₀ ψ₁} → Θ ▸ Γ ⊩ ω ⇒ ψ₀ → Θ ▸ Γ ⊩ ω ⇒ ψ₁ → ψ₀ ≡ ψ₁
   unique-infer-mesh nil nil = refl
-  unique-infer-mesh (cons ⊢ϕ₀ ⊢ω₀) (cons ⊢ϕ₁ ⊢ω₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁ | unique-infer-mesh ⊢ω₀ ⊢ω₁
-  unique-infer-mesh (cons ⊢ϕ₀ ⊢ω₀) (cons ⊢ϕ₁ ⊢ω₁) | refl | refl = refl
+  unique-infer-mesh (cons ⊢ϕ ⊢ω) (cons ⊢ϕ′ ⊢ω′) with unique-infer-face ⊢ϕ ⊢ϕ′ | unique-infer-mesh ⊢ω ⊢ω′
+  … | refl | refl = refl
+  unique-infer-mesh (cut⊗ ⊢ω₀ ⊢ω₁) (cut⊗ ⊢ω₀′ ⊢ω₁′) with unique-infer-mesh ⊢ω₀ ⊢ω₀′ | unique-infer-mesh ⊢ω₁ ⊢ω₁′
+  … | refl | refl = refl
+  unique-infer-mesh (cut⇔ ⊢ω₀ ⊢ω₁) (cut⇔ ⊢ω₀′ ⊢ω₁′) with unique-infer-mesh ⊢ω₀ ⊢ω₀′
+  … | refl with unique-check-mesh ⊢ω₁ ⊢ω₁′
+  … | refl = refl
 
-  unique-infer-face
-    : ∀ {Θ Γ ϕ ψ₀ ψ₁}
-    → Θ ▸ Γ ⊢ ϕ ⇒ ψ₀
-    → Θ ▸ Γ ⊢ ϕ ⇒ ψ₁
-    → ψ₀ ≡ ψ₁
+  unique-infer-face : ∀ {Θ Γ ϕ ψ₀ ψ₁} → Θ ▸ Γ ⊢ ϕ ⇒ ψ₀ → Θ ▸ Γ ⊢ ϕ ⇒ ψ₁ → ψ₀ ≡ ψ₁
   unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁
-  unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) | refl with unique-check-mesh ⊢ω₀ ⊢ω₁
-  unique-infer-face (cut ⊢ϕ₀ ⊢ω₀) (cut ⊢ϕ₁ ⊢ω₁) | refl | refl = refl
+  … | refl with unique-check-mesh ⊢ω₀ ⊢ω₁
+  … | refl = refl
   unique-infer-face (ovar ⊢ϑ₀) (ovar ⊢ϑ₁) = Maybe.⊢.so-inj (≡.seq (≡.inv ⊢ϑ₀ , ⊢ϑ₁))
   unique-infer-face (abs ⊢ϕ₀) (abs ⊢ϕ₁) with unique-infer-face ⊢ϕ₀ ⊢ϕ₁
-  unique-infer-face (abs ⊢ϕ₀) (abs ⊢ϕ₁) | refl = refl
+  … | refl = refl
   unique-infer-face (tvar ⊢x₀) (tvar ⊢x₁) = Maybe.⊢.so-inj (≡.seq (≡.inv ⊢x₀ , ⊢x₁))
 
 reframe : (ϡ : Canopy) → Σ Frame (Reframe ϡ)
@@ -352,30 +359,33 @@ diminish (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with drop- ϡ₀ ϡ₁
 … | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ dim φ₀ φ₁)
 
 mutual
-  ⊢check-mesh
-    : ∀ Θ Γ ω ξ
-    → Decidable (Σ (List Frame) λ ϡ → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ)
+  ⊢check-mesh : ∀ Θ Γ ω ξ → Decidable (Σ (List Frame) λ ϡ → Θ ▸ Γ ⊩ ω ⇐ ξ ⟖ ϡ)
   ⊢check-mesh Θ Γ ω ξ with ⊢infer-mesh Θ Γ ω
   ⊢check-mesh Θ Γ ω ξ | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ check φ₀ _ _) → κ₀ (_ ▸ φ₀) }
   ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) with reframe ξ
   ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ with diminish ψ₀ ψ₁
-  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ | ⊕.inl κ₂ =
-      ⊕.inl λ { (_ ▸ check φ₀′ φ₁′ φ₂) → κ₂ (_ ▸ ≡.coe* (λ X → Diminish X _ _) (unique-infer-mesh φ₀′ φ₀) (≡.coe* (λ Y → Diminish _ Y _) (unique-reframe φ₁′ φ₁) φ₂)) }
+  ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ | ⊕.inl κ₂ = ⊕.inl λ { (_ ▸ check φ₀′ φ₁′ φ₂) → κ₂ (_ ▸ ≡.coe* (λ X → Diminish X _ _) (unique-infer-mesh φ₀′ φ₀) (≡.coe* (λ Y → Diminish _ Y _) (unique-reframe φ₁′ φ₁) φ₂)) }
   ⊢check-mesh Θ Γ ω ξ | ⊕.inr (ψ₀ ▸ φ₀) | ψ₁ ▸ φ₁ | ⊕.inr (_ ▸ φ₂) = ⊕.inr (_ ▸ check φ₀ φ₁ φ₂)
 
-  ⊢infer-mesh
-    : ∀ Θ Γ ω
-    → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊩ ω ⇒ ψ)
+  ⊢infer-mesh : ∀ Θ Γ ω → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊩ ω ⇒ ψ)
   ⊢infer-mesh Θ Γ nil = ⊕.inr (_ ▸ nil)
   ⊢infer-mesh Θ Γ (cons ϕ ω) with ⊢infer-face Θ Γ ϕ
-  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons φ₀ φ₁) → κ₀ (_ ▸ φ₀) }
-  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr φ₀ with ⊢infer-mesh Θ Γ ω
-  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr φ₀ | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons _ φ₁) → κ₁ (_ ▸ φ₁) }
-  ⊢infer-mesh Θ Γ (cons ϕ ω) | ⊕.inr (_ ⊸ _ ▸ φ₀) | ⊕.inr (_ ⊸ _ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₀ φ₁)
+  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons φ₀ φ₁) → κ₀ (_ ▸ φ₀) }
+  … | ⊕.inr (_ ⊸ _ ▸ φ₀) with ⊢infer-mesh Θ Γ ω
+  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons _ φ₁) → κ₁ (_ ▸ φ₁) }
+  … | ⊕.inr (_ ⊸ _ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₀ φ₁)
+  ⊢infer-mesh Θ Γ (cut⇔ ω₀ ω₁) with ⊢infer-mesh Θ Γ ω₀
+  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cut⇔ ⊢ω₀ _) → κ₀ (_ ▸ ⊢ω₀) }
+  … | ⊕.inr (ξ ⊸ _ ▸ ⊢ω₀) with ⊢check-mesh Θ Γ ω₁ ξ
+  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cut⇔ ⊢ω₀′ ⊢ω₁) → κ₁ (_ ▸ ≡.coe* (λ X → _ ▸ _ ⊩ _ ⇐ X ⟖ _) (⊗.fst (frame-inj (unique-infer-mesh ⊢ω₀′ ⊢ω₀))) ⊢ω₁) }
+  … | ⊕.inr (_ ▸ ⊢ω₁) = ⊕.inr (_ ▸ cut⇔ ⊢ω₀ ⊢ω₁)
+  ⊢infer-mesh Θ Γ (cut⊗ ω₀ ω₁) with ⊢infer-mesh Θ Γ ω₀
+  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cut⊗ ⊢ω₀ _) → κ₀ (_ ▸ ⊢ω₀) }
+  … | ⊕.inr (_ ⊸ _ ▸ ⊢ω₀) with ⊢infer-mesh Θ Γ ω₁
+  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cut⊗ _ ⊢ω₁) → κ₁ (_ ▸ ⊢ω₁) }
+  … | ⊕.inr (_ ⊸ _ ▸ ⊢ω₁) = ⊕.inr (_ ▸ cut⊗ ⊢ω₀ ⊢ω₁)
 
-  ⊢infer-face
-    : ∀ Θ Γ ϕ
-    → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊢ ϕ ⇒ ψ)
+  ⊢infer-face : ∀ Θ Γ ϕ → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊢ ϕ ⇒ ψ)
   ⊢infer-face Θ Γ (cut ϕ ω) with ⊢infer-face Θ Γ ϕ
   … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cut φ₀ _) → κ₀ (_ ▸ φ₀) }
   … | ⊕.inr (ξ ⊸ _ ▸ φ₀) with ⊢check-mesh Θ Γ ω ξ
@@ -385,11 +395,11 @@ mutual
   … | ⊕.inl κ = ⊕.inl λ { (_ ▸ abs φ) → κ (_ ▸ φ) }
   … | ⊕.inr (_ ⊸ _ ▸ φ) = ⊕.inr (_ ▸ abs φ)
   ⊢infer-face Θ Γ (ovar ϑ) with Computad.look Θ ϑ | inspect (Computad.look Θ) ϑ
-  ⊢infer-face Θ Γ (ovar ϑ) | no   | [ φ ] = ⊕.inl λ { (_ ▸ ovar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
-  ⊢infer-face Θ Γ (ovar ϑ) | so ψ | [ φ ] = ⊕.inr (_ ▸ ovar φ)
+  … | no   | [ φ ] = ⊕.inl λ { (_ ▸ ovar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
+  … | so ψ | [ φ ] = ⊕.inr (_ ▸ ovar φ)
   ⊢infer-face Θ Γ (tvar x) with Context.look Γ x | inspect (Context.look Γ) x
-  ⊢infer-face Θ Γ (tvar x) | no   | [ φ ] = ⊕.inl λ { (_ ▸ tvar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
-  ⊢infer-face Θ Γ (tvar x) | so ψ | [ φ ] = ⊕.inr (_ ▸ tvar φ)
+  … | no   | [ φ ] = ⊕.inl λ { (_ ▸ tvar φ′) → Maybe.⊢.no≢so (≡.seq (≡.inv φ , φ′)) }
+  … | so ψ | [ φ ] = ⊕.inr (_ ▸ tvar φ)
 
 infer-mesh : Computad → Context → Mesh → Maybe Frame
 infer-mesh Θ Γ ω with ⊢infer-mesh Θ Γ ω
