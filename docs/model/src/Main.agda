@@ -7,43 +7,22 @@ open import Prelude.Inspect
 open import Prelude.Maybe
 open import Prelude.Monoidal
   renaming (_⊗_ to _×_)
+open import Prelude.List
+  renaming ([] to ε)
+  renaming (_∷_ to _⊗_)
 open import Prelude.Natural
 open import Prelude.Path
 open import Prelude.Size
 open import Prelude.String
 
+open List
+  renaming (_++_ to _⊛_)
+  using ()
+
 infix 2 _⊸_
 infix 0 _▸_⊩_⇒_
 infix 0 _▸_⊩_⇐_⟖_
 infix 0 _▸_⊢_⇒_
-infixl 5 _⊛_
-infixl 5 _⊗_
-
-data List (A : Set) : Set where
-  ε : List A
-  _⊗_ : (xs : List A) (x : A) → List A
-
-_⊛_
-  : {A : Set}
-  → List A
-  → List A
-  → List A
-xs ⊛ ε = xs
-xs ⊛ (ys ⊗ y) = (xs ⊛ ys) ⊗ y
-
-list-eq
-  : {A : Set}
-  → (δ : (a a′ : A) → Decidable (a ≡ a′))
-  → (xs₀ xs₁ : List A)
-  → Decidable (xs₀ ≡ xs₁)
-list-eq _≟_ ε ε = ⊕.inr refl
-list-eq _≟_ ε (_ ⊗ _) = ⊕.inl λ()
-list-eq _≟_ (xs₀ ⊗ x₀) ε = ⊕.inl λ()
-list-eq _≟_ (xs₀ ⊗ x₀) (xs₁ ⊗ x₁) with x₀ ≟ x₁
-… | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-… | ⊕.inr refl with list-eq _≟_ xs₀ xs₁
-… | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-… | ⊕.inr refl = ⊕.inr refl
 
 OName = String
 TName = Nat
@@ -92,8 +71,8 @@ module Context where
 
   look : (Γ : Context) (x : TName) → Maybe Frame
   look ε x = no
-  look (Γ ⊗ ψ) ze = so ψ
-  look (Γ ⊗ ψ) (su x) = look Γ x
+  look (ψ ⊗ Γ) ze = so ψ
+  look (ψ ⊗ Γ) (su x) = look Γ x
 open Context
   using (Context)
 
@@ -103,7 +82,7 @@ module Signature where
 
   look : (𝔏 : Signature) (ϑ : OName) → Maybe Frame
   look ε ϑ = no
-  look (𝔏 ⊗ ▸δ ϑ? ψ) ϑ with String.⟦ ϑ? ≟ ϑ ⟧
+  look (▸δ ϑ? ψ ⊗ 𝔏) ϑ with String.⟦ ϑ? ≟ ϑ ⟧
   … | ff = look 𝔏 ϑ
   … | tt = so ψ
 open Signature
@@ -115,7 +94,7 @@ module Computad where
 
   look : (Θ : Computad) (ϑ : OName) → Maybe Frame
   look ε ϑ = no
-  look (Θ ⊗ 𝔏) ϑ with Signature.look 𝔏 ϑ
+  look (𝔏 ⊗ Θ) ϑ with Signature.look 𝔏 ϑ
   … | no = look Θ ϑ
   … | ψ = ψ
 open Computad
@@ -128,7 +107,7 @@ data Drop- : (ϡ₀ ϡ₁ ϡ₂ : Canopy) → Set where
   cons
     : ∀ {ϡ₀ ϡ₁ ψ ρ}
     → Drop- ϡ₀ ϡ₁ ρ
-    → Drop- (ϡ₀ ⊗ ψ) (ϡ₁ ⊗ ψ) ρ
+    → Drop- (ψ ⊗ ϡ₀) (ψ ⊗ ϡ₁) ρ
 
 data Drop+ : (ϰ₀ ϰ₁ : Cluster) (ϡ : Canopy) → Set where
   nil
@@ -136,11 +115,11 @@ data Drop+ : (ϰ₀ ϰ₁ : Cluster) (ϡ : Canopy) → Set where
   ext
     : ∀ {ϰ ϕ ϡ}
     → Drop+ ε ϰ ϡ
-    → Drop+ ε (ϰ ⊗ ϕ) (ϡ ⊗ (ε ⊸ ε ⊗ ϕ))
+    → Drop+ ε (ϕ ⊗ ϰ) ((ε ⊸ ϕ ⊗ ε) ⊗ ϡ)
   cons
     : ∀ {ϰ₀ ϰ₁ ϕ ρ}
     → Drop+ ϰ₀ ϰ₁ ρ
-    → Drop+ (ϰ₀ ⊗ ϕ) (ϰ₁ ⊗ ϕ) ρ
+    → Drop+ (ϕ ⊗ ϰ₀) (ϕ ⊗ ϰ₁) ρ
 
 data Diminish : (ψ₀ ψ₁ : Frame) (ϡ : Canopy) → Set where
   dim
@@ -154,8 +133,8 @@ data Reframe : (ϡ : Canopy) (ψ : Frame) → Set where
     : Reframe ε (ε ⊸ ε)
   cons
     : ∀ {ϡ Γ γ Δ δ}
-    → Reframe ϡ (Γ ⊸ γ)
-    → Reframe (ϡ ⊗ (Δ ⊸ δ)) (Γ ⊛ Δ ⊸ γ ⊛ δ)
+    → Reframe ϡ (Δ ⊸ δ)
+    → Reframe ((Γ ⊸ γ) ⊗ ϡ) (Γ ⊛ Δ ⊸ γ ⊛ δ)
 
 mutual
   data _▸_⊩_⇐_⟖_ (Θ : Computad) (Γ : Context) (ω : Mesh) (ξ : Canopy) (ϡ : Canopy) : Set where
@@ -204,18 +183,15 @@ mutual
       → Context.look Γ x ≡ so ψ
       → Θ ▸ Γ ⊢ tvar x ⇒ ψ
 
-frame-inj
-  : ∀ {ϡ₀ ϡ₁ ϰ₀ ϰ₁}
-  → (ϡ₀ ⊸ ϰ₀) ≡ (ϡ₁ ⊸ ϰ₁)
-  → ϡ₀ ≡ ϡ₁ × ϰ₀ ≡ ϰ₁
+frame-inj : ∀ {ϡ₀ ϡ₁ ϰ₀ ϰ₁} → (ϡ₀ ⊸ ϰ₀) ≡ (ϡ₁ ⊸ ϰ₁) → ϡ₀ ≡ ϡ₁ × ϰ₀ ≡ ϰ₁
 frame-inj refl = refl , refl
 
 mutual
   {-# TERMINATING #-}
   frame-eq : (ψ₀ ψ₁ : Frame) → Decidable (ψ₀ ≡ ψ₁)
-  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with list-eq face-eq ϰ₀ ϰ₁ -- FIXME: list-eq needs sized types
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with face-eq List.⊢ ϰ₀ ≟ ϰ₁ -- FIXME: list-eq needs sized types
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with list-eq frame-eq ϡ₀ ϡ₁
+  … | ⊕.inr refl with frame-eq List.⊢ ϡ₀ ≟ ϡ₁
   … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
   … | ⊕.inr refl = ⊕.inr refl
 
@@ -259,7 +235,7 @@ mutual
   face-eq (cut _ _) (ovar _) = ⊕.inl λ()
   face-eq (cut _ _) (tvar _) = ⊕.inl λ()
   face-eq (abs _ _) (cut _ _) = ⊕.inl λ()
-  face-eq (abs Ϡ₀ ϕ₀) (abs Ϡ₁ ϕ₁) with list-eq frame-eq Ϡ₀ Ϡ₁
+  face-eq (abs Ϡ₀ ϕ₀) (abs Ϡ₁ ϕ₁) with frame-eq List.⊢ Ϡ₀ ≟ Ϡ₁
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
   … | ⊕.inr refl with face-eq ϕ₀ ϕ₁
   … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
@@ -327,13 +303,13 @@ mutual
 
 reframe : (ϡ : Canopy) → Σ Frame (Reframe ϡ)
 reframe ε = _ ▸ nil
-reframe (ϡ ⊗ (Δ ⊸ δ)) with reframe ϡ
-… | (Γ ⊸ γ) ▸ φ = (Γ ⊛ Δ ⊸ γ ⊛ δ) ▸ cons φ
+reframe ((Γ ⊸ γ) ⊗ ϡ) with reframe ϡ
+… | (Δ ⊸ δ) ▸ φ = Γ ⊛ Δ ⊸ γ ⊛ δ ▸ cons φ
 
 drop- : (ϡ₀ ϡ₁ : Canopy) → Decidable (Σ Canopy (Drop- ϡ₀ ϡ₁))
 drop- ϡ₀ ε = ⊕.inr (_ ▸ nil)
-drop- ε (ϡ₁ ⊗ ψ₁) = ⊕.inl λ { (_ ▸ ()) }
-drop- (ϡ₀ ⊗ ψ₀) (ϡ₁ ⊗ ψ₁) with frame-eq ψ₀ ψ₁
+drop- ε (ψ₁ ⊗ ϡ₁) = ⊕.inl λ { (_ ▸ ()) }
+drop- (ψ₀ ⊗ ϡ₀) (ψ₁ ⊗ ϡ₁) with frame-eq ψ₀ ψ₁
 … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
 … | ⊕.inr refl with drop- ϡ₀ ϡ₁
 … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons ρ) → κ₁ (_ ▸ ρ) }
@@ -341,11 +317,11 @@ drop- (ϡ₀ ⊗ ψ₀) (ϡ₁ ⊗ ψ₁) with frame-eq ψ₀ ψ₁
 
 drop+ : (ϰ₀ ϰ₁ : Cluster) → Decidable (Σ Canopy (Drop+ ϰ₀ ϰ₁))
 drop+ ε ε = ⊕.inr (_ ▸ nil)
-drop+ ε (ϰ₁ ⊗ ϕ₁) with drop+ ε ϰ₁
+drop+ ε (ϕ₁ ⊗ ϰ₁) with drop+ ε ϰ₁
 … | ⊕.inl κ = ⊕.inl λ { (_ ▸ ext φ) → κ (_ ▸ φ) }
 … | ⊕.inr (_ ▸ φ) = ⊕.inr (_ ▸ ext φ)
-drop+ (ϰ₀ ⊗ ϕ₀) ε = ⊕.inl λ { (_ ▸ ()) }
-drop+ (ϰ₀ ⊗ ϕ₀) (ϰ₁ ⊗ ϕ₁) with face-eq ϕ₀ ϕ₁
+drop+ (ϕ₀ ⊗ ϰ₀) ε = ⊕.inl λ { (_ ▸ ()) }
+drop+ (ϕ₀ ⊗ ϰ₀) (ϕ₁ ⊗ ϰ₁) with face-eq ϕ₀ ϕ₁
 … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
 … | ⊕.inr refl with drop+ ϰ₀ ϰ₁
 … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons φ₁) → κ₁ (_ ▸ φ₁) }
@@ -415,26 +391,44 @@ module Test where
   𝔏₀ : Signature
   𝔏₀ =
     let Δ = ε in
-    let Δ = Δ ⊗ ▸δ "bool" (ε ⊸ ε) in
+    let Δ = ▸δ "nat" (ε ⊸ ε) ⊗ Δ in
+    let Δ = ▸δ "bool" (ε ⊸ ε) ⊗ Δ in
     Δ
 
   𝔏₁ : Signature
   𝔏₁ =
     let Δ = ε in
-    let Δ = Δ ⊗ ▸δ "ff" (ε ⊸ ε ⊗ ovar "bool") in
-    let Δ = Δ ⊗ ▸δ "tt" (ε ⊸ ε ⊗ ovar "bool") in
-    let Δ = Δ ⊗ ▸δ "not" (ε ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊸ ε ⊗ ovar "bool") in
-    let Δ = Δ ⊗ ▸δ "and" (ε ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊗ (ε ⊸ ε ⊗ ovar "bool") ⊸ (ε ⊗ ovar "bool")) in
+    let Δ = ▸δ "zero" (ε ⊸ ovar "nat" ⊗ ε) ⊗ Δ in
+    let Δ = ▸δ "ff" (ε ⊸ ovar "bool" ⊗ ε) ⊗ Δ in
+    let Δ = ▸δ "tt" (ε ⊸ ovar "bool" ⊗ ε) ⊗ Δ in
+    let Δ = ▸δ "not" ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε) ⊗ Δ in
+    let Δ = ▸δ "and" ((ε ⊸ ovar "bool" ⊗ ε) ⊗ (ε ⊸ ovar "bool" ⊗ ε) ⊗ ε ⊸ (ovar "bool" ⊗ ε)) ⊗ Δ in
+    let Δ = ▸δ "misc" ((ε ⊸ ovar "bool" ⊗ ε) ⊗ (ε ⊸ ovar "nat" ⊗ ε) ⊗ (ε ⊸ ovar "bool" ⊗ ε) ⊗ (ε ⊸ ovar "nat" ⊗ ε) ⊗ ε ⊸ (ovar "bool" ⊗ ε)) ⊗ Δ in
     Δ
 
   Θ : Computad
-  Θ = ε ⊗ 𝔏₀ ⊗ 𝔏₁
+  Θ = 𝔏₀ ⊗ 𝔏₁ ⊗ ε
 
   term₀ : Face
   term₀ = cut (ovar "and") (cons (ovar "ff") (cons (ovar "not") nil))
 
   term₁ : Face
-  term₁ = cut (ovar "and") (cons (ovar "ff") (cons (abs (ε ⊗ (ε ⊸ ε ⊗ ovar "bool")) (cut (ovar "not") (cons (tvar 0) nil))) nil))
+  term₁ = cut (ovar "and") (cons (ovar "ff") (cons (abs ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε) (cut (ovar "not") (cons (tvar 0) nil))) nil))
 
-  test : infer-face Θ ε term₀ ≡ infer-face Θ ε term₁
-  test = refl
+  term₂ : Face
+  term₂ = cut (ovar "misc") (cons (ovar "ff") (cons (ovar "zero") nil))
+
+  term₃ : Face
+  term₃ = cut (ovar "misc") (cons (ovar "ff") (cons (ovar "zero") (cons (ovar "tt") nil)))
+
+  p₀ : infer-face Θ ε term₀ ≡ so ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
+  p₀ = refl
+
+  p₁ : infer-face Θ ε term₁ ≡ so ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
+  p₁ = refl
+
+  p₂ : infer-face Θ ε term₂ ≡ so ((ε ⊸ ovar "bool" ⊗ ε) ⊗ (ε ⊸ ovar "nat" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
+  p₂ = refl
+
+  p₃ : infer-face Θ ε term₃ ≡ so ((ε ⊸ ovar "nat" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
+  p₃ = refl
