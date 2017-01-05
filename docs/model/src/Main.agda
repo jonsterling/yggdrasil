@@ -19,14 +19,16 @@ open List
   renaming (_++_ to _⊛_)
   using ()
 
+infixl 0 _≫_
+infix 0 _⊙_
+infix 0 _▸_⊢_⇒_
+infix 0 _▸_⊩_⇐_⟖_
+infix 0 _▸_⊩_⇒_
+infix 2 _⊸_
+
 _⊙_ : {A : Set} → List A → List A → List A
 ε ⊙ ys = ys
 (x ⊗ xs) ⊙ ys = xs ⊙ (x ⊗ ys)
-
-infix 2 _⊸_
-infix 0 _▸_⊩_⇒_
-infix 0 _▸_⊩_⇐_⟖_
-infix 0 _▸_⊢_⇒_
 
 OName = String
 TName = Nat
@@ -43,7 +45,7 @@ mutual
 
   data Mesh : Set where
     nil : Mesh
-    cons : (ϕ : Face) (ω : Mesh) → Mesh
+    snoc : (ω : Mesh) (ϕ : Face) → Mesh
     cut⊗ : (ω₀ : Mesh) (ω₁ : Mesh) → Mesh
     cut⇔ : (ω₁ : Mesh) (ω₀ : Mesh) → Mesh
 
@@ -68,6 +70,8 @@ mutual
     field
       ϑ : OName
       ψ : Frame
+
+pattern _≫_ ω ϕ = snoc ω ϕ
 
 module Context where
   Context : Set
@@ -154,9 +158,9 @@ mutual
       : Θ ▸ Γ ⊩ nil ⇒ ε ⊸ ε
     cons
       : ∀ {ϕ ω ϡ₀ ϡ₁ ϰ₀ ϰ₁}
-      → Θ ▸ Γ ⊢ ϕ ⇒ ϡ₀ ⊸ ϰ₀
-      → Θ ▸ Γ ⊩ ω ⇒ ϡ₁ ⊸ ϰ₁
-      → Θ ▸ Γ ⊩ cons ϕ ω ⇒ ϡ₀ ⊛ ϡ₁ ⊸ ϰ₀ ⊛ ϰ₁
+      → Θ ▸ Γ ⊩ ω ⇒ ϡ₀ ⊸ ϰ₀
+      → Θ ▸ Γ ⊢ ϕ ⇒ ϡ₁ ⊸ ϰ₁
+      → Θ ▸ Γ ⊩ snoc ω ϕ ⇒ ϡ₀ ⊛ ϡ₁ ⊸ ϰ₀ ⊛ ϰ₁
     cut⊗
       : ∀ {ω₀ ω₁ ϡ₀ ϡ₁ ϰ₀ ϰ₁}
       → Θ ▸ Γ ⊩ ω₀ ⇒ ϡ₀ ⊸ ϰ₀
@@ -201,19 +205,19 @@ mutual
 
   mesh-eq : (ω₀ ω₁ : Mesh) → Decidable (ω₀ ≡ ω₁)
   mesh-eq nil nil = ⊕.inr refl
-  mesh-eq nil (cons _ _) = ⊕.inl λ()
+  mesh-eq nil (snoc _ _) = ⊕.inl λ()
   mesh-eq nil (cut⊗ _ _) = ⊕.inl λ()
   mesh-eq nil (cut⇔ _ _) = ⊕.inl λ()
-  mesh-eq (cons _ _) nil = ⊕.inl λ()
-  mesh-eq (cons ϕ₀ ω₀) (cons ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
+  mesh-eq (snoc _ _) nil = ⊕.inl λ()
+  mesh-eq (snoc ω₀ ϕ₀) (snoc ω₁ ϕ₁) with face-eq ϕ₀ ϕ₁
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
   … | ⊕.inr refl with mesh-eq ω₀ ω₁
   … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
   … | ⊕.inr refl = ⊕.inr refl
-  mesh-eq (cons _ _) (cut⇔ _ _) = ⊕.inl λ()
-  mesh-eq (cons _ _) (cut⊗ _ _) = ⊕.inl λ()
+  mesh-eq (snoc _ _) (cut⇔ _ _) = ⊕.inl λ()
+  mesh-eq (snoc _ _) (cut⊗ _ _) = ⊕.inl λ()
   mesh-eq (cut⇔ _ _) nil = ⊕.inl λ()
-  mesh-eq (cut⇔ _ _) (cons _ _) = ⊕.inl λ()
+  mesh-eq (cut⇔ _ _) (snoc _ _) = ⊕.inl λ()
   mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
   … | ⊕.inr refl with mesh-eq ω₁ ω₁′
@@ -221,7 +225,7 @@ mutual
   … | ⊕.inr refl = ⊕.inr refl
   mesh-eq (cut⇔ _ _) (cut⊗ _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ _ _) nil = ⊕.inl λ()
-  mesh-eq (cut⊗ _ _) (cons _ _) = ⊕.inl λ()
+  mesh-eq (cut⊗ _ _) (snoc _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ _ _) (cut⇔ _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
   … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
@@ -288,7 +292,7 @@ mutual
 
   unique-infer-mesh : ∀ {Θ Γ ω ψ₀ ψ₁} → Θ ▸ Γ ⊩ ω ⇒ ψ₀ → Θ ▸ Γ ⊩ ω ⇒ ψ₁ → ψ₀ ≡ ψ₁
   unique-infer-mesh nil nil = refl
-  unique-infer-mesh (cons ⊢ϕ ⊢ω) (cons ⊢ϕ′ ⊢ω′) with unique-infer-face ⊢ϕ ⊢ϕ′ | unique-infer-mesh ⊢ω ⊢ω′
+  unique-infer-mesh (cons ⊢ω ⊢ϕ) (cons ⊢ω′ ⊢ϕ′) with unique-infer-face ⊢ϕ ⊢ϕ′ | unique-infer-mesh ⊢ω ⊢ω′
   … | refl | refl = refl
   unique-infer-mesh (cut⊗ ⊢ω₀ ⊢ω₁) (cut⊗ ⊢ω₀′ ⊢ω₁′) with unique-infer-mesh ⊢ω₀ ⊢ω₀′ | unique-infer-mesh ⊢ω₁ ⊢ω₁′
   … | refl | refl = refl
@@ -349,11 +353,11 @@ mutual
 
   ⊢infer-mesh : ∀ Θ Γ ω → Decidable (Σ Frame λ ψ → Θ ▸ Γ ⊩ ω ⇒ ψ)
   ⊢infer-mesh Θ Γ nil = ⊕.inr (_ ▸ nil)
-  ⊢infer-mesh Θ Γ (cons ϕ ω) with ⊢infer-face Θ Γ ϕ
-  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons φ₀ φ₁) → κ₀ (_ ▸ φ₀) }
-  … | ⊕.inr (_ ⊸ _ ▸ φ₀) with ⊢infer-mesh Θ Γ ω
-  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons _ φ₁) → κ₁ (_ ▸ φ₁) }
-  … | ⊕.inr (_ ⊸ _ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₀ φ₁)
+  ⊢infer-mesh Θ Γ (snoc ω ϕ) with ⊢infer-face Θ Γ ϕ
+  … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _ ⊢ϕ) → κ₀ (_ ▸ ⊢ϕ) }
+  … | ⊕.inr (_ ⊸ _ ▸ ⊢ϕ) with ⊢infer-mesh Θ Γ ω
+  … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons ⊢ω _) → κ₁ (_ ▸ ⊢ω) }
+  … | ⊕.inr (_ ⊸ _ ▸ ⊢ω) = ⊕.inr (_ ▸ cons ⊢ω ⊢ϕ)
   ⊢infer-mesh Θ Γ (cut⇔ ω₀ ω₁) with ⊢infer-mesh Θ Γ ω₀
   … | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cut⇔ ⊢ω₀ _) → κ₀ (_ ▸ ⊢ω₀) }
   … | ⊕.inr (ξ ⊸ _ ▸ ⊢ω₀) with ⊢check-mesh Θ Γ ω₁ ξ
@@ -414,16 +418,16 @@ module Test where
   Θ = 𝔏₀ ⊗ 𝔏₁ ⊗ ε
 
   term₀ : Face
-  term₀ = cut (ovar "and") (cons (ovar "ff") (cons (ovar "not") nil))
+  term₀ = cut (ovar "and") (nil ≫ ovar "ff" ≫ ovar "not")
 
   term₁ : Face
-  term₁ = cut (ovar "and") (cons (ovar "ff") (cons (abs ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε) (cut (ovar "not") (cons (tvar 0) nil))) nil))
+  term₁ = cut (ovar "and") (nil ≫ ovar "ff" ≫ abs ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε) (cut (ovar "not") (nil ≫ tvar 0)))
 
   term₂ : Face
-  term₂ = cut (ovar "misc") (cons (ovar "ff") (cons (ovar "zero") nil))
+  term₂ = cut (ovar "misc") (nil ≫ ovar "ff" ≫ ovar "zero")
 
   term₃ : Face
-  term₃ = cut (ovar "misc") (cons (ovar "ff") (cons (ovar "zero") (cons (ovar "tt") nil)))
+  term₃ = cut (ovar "misc") (nil ≫ ovar "ff" ≫ ovar "zero" ≫ ovar "tt")
 
   term₄ : Face
   term₄ =
