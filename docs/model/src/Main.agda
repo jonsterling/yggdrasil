@@ -19,6 +19,13 @@ open List
   renaming (_++_ to _⊛_)
   using ()
 
+reverse-aux : {A : Set} → List A → List A → List A
+reverse-aux acc ε = acc
+reverse-aux acc (x ⊗ xs) = reverse-aux (x ⊗ acc) xs
+
+reverse : {A : Set} → List A → List A
+reverse = reverse-aux ε
+
 infix 2 _⊸_
 infix 0 _▸_⊩_⇒_
 infix 0 _▸_⊩_⇐_⟖_
@@ -176,7 +183,7 @@ mutual
       → Θ ▸ Γ ⊢ ovar ϑ ⇒ ψ
     abs
       : ∀ {Ϡ ϕ ϡ ϰ}
-      → Θ ▸ Γ ⊛ Ϡ ⊢ ϕ ⇒ ϡ ⊸ ϰ
+      → Θ ▸ reverse Ϡ ⊛ Γ ⊢ ϕ ⇒ ϡ ⊸ ϰ
       → Θ ▸ Γ ⊢ abs Ϡ ϕ ⇒ Ϡ ⊛ ϡ ⊸ ϰ
     tvar
       : ∀ {x ψ}
@@ -304,7 +311,7 @@ mutual
 reframe : (ϡ : Canopy) → Σ Frame (Reframe ϡ)
 reframe ε = _ ▸ nil
 reframe ((Γ ⊸ γ) ⊗ ϡ) with reframe ϡ
-… | (Δ ⊸ δ) ▸ φ = Γ ⊛ Δ ⊸ γ ⊛ δ ▸ cons φ
+… | Δ ⊸ δ ▸ φ = Γ ⊛ Δ ⊸ γ ⊛ δ ▸ cons φ
 
 drop- : (ϡ₀ ϡ₁ : Canopy) → Decidable (Σ Canopy (Drop- ϡ₀ ϡ₁))
 drop- ϡ₀ ε = ⊕.inr (_ ▸ nil)
@@ -367,7 +374,7 @@ mutual
   … | ⊕.inr (ξ ⊸ _ ▸ φ₀) with ⊢check-mesh Θ Γ ω ξ
   … | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cut φ₀′ φ₁) → κ₁ (_ ▸ ≡.coe* (λ X → _ ▸ _ ⊩ _ ⇐ X ⟖ _) (⊗.fst (frame-inj (unique-infer-face φ₀′ φ₀))) φ₁) }
   … | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ cut φ₀ φ₁)
-  ⊢infer-face Θ Γ (abs Ϡ ϕ) with ⊢infer-face Θ (Γ ⊛ Ϡ) ϕ
+  ⊢infer-face Θ Γ (abs Ϡ ϕ) with ⊢infer-face Θ (reverse Ϡ ⊛ Γ) ϕ
   … | ⊕.inl κ = ⊕.inl λ { (_ ▸ abs φ) → κ (_ ▸ φ) }
   … | ⊕.inr (_ ⊸ _ ▸ φ) = ⊕.inr (_ ▸ abs φ)
   ⊢infer-face Θ Γ (ovar ϑ) with Computad.look Θ ϑ | inspect (Computad.look Θ) ϑ
@@ -421,6 +428,30 @@ module Test where
   term₃ : Face
   term₃ = cut (ovar "misc") (cons (ovar "ff") (cons (ovar "zero") (cons (ovar "tt") nil)))
 
+  term₄ : Face
+  term₄ =
+    abs
+      ((ε ⊸ ovar "foo" ⊗ ε) ⊗
+      ((ε ⊸ ovar "dom" ⊗ ε) ⊗ ε ⊸ ovar "cod" ⊗ ε) ⊗
+        ε)
+      (abs
+        ((ε ⊸ ovar "baz" ⊗ ε) ⊗
+         (ε ⊸ ovar "qux" ⊗ ε) ⊗
+          ε)
+        (tvar 0))
+
+  term₅ : Face
+  term₅ =
+    abs
+      ((ε ⊸ ovar "foo" ⊗ ε) ⊗
+      ((ε ⊸ ovar "dom" ⊗ ε) ⊗ ε ⊸ ovar "cod" ⊗ ε) ⊗
+        ε)
+      (abs
+        ((ε ⊸ ovar "baz" ⊗ ε) ⊗
+         (ε ⊸ ovar "qux" ⊗ ε) ⊗
+          ε)
+        (tvar 2))
+
   p₀ : infer-face Θ ε term₀ ≡ so ((ε ⊸ ovar "bool" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
   p₀ = refl
 
@@ -432,3 +463,19 @@ module Test where
 
   p₃ : infer-face Θ ε term₃ ≡ so ((ε ⊸ ovar "nat" ⊗ ε) ⊗ ε ⊸ ovar "bool" ⊗ ε)
   p₃ = refl
+
+  p₄ : infer-face Θ ε term₄
+     ≡ so ((ε ⊸ ovar "foo" ⊗ ε) ⊗
+          ((ε ⊸ ovar "dom" ⊗ ε) ⊗ ε ⊸ ovar "cod" ⊗ ε) ⊗
+           (ε ⊸ ovar "baz" ⊗ ε) ⊗
+           (ε ⊸ ovar "qux" ⊗ ε) ⊗ ε
+       ⊸ ovar "qux" ⊗ ε)
+  p₄ = refl
+
+  p₅ : infer-face Θ ε term₅
+     ≡ so ((ε ⊸ ovar "foo" ⊗ ε) ⊗
+          ((ε ⊸ ovar "dom" ⊗ ε) ⊗ ε ⊸ ovar "cod" ⊗ ε) ⊗
+           (ε ⊸ ovar "baz" ⊗ ε) ⊗
+           (ε ⊸ ovar "qux" ⊗ ε) ⊗
+       (ε ⊸ ovar "dom" ⊗ ε) ⊗ ε ⊸ ovar "cod" ⊗ ε)
+  p₅ = refl
