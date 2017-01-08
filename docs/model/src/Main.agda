@@ -19,14 +19,14 @@ open List
   renaming (_++_ to _⊛_)
   using ()
 
-_⊙_ : {A : Set} → List A → List A → List A
-ε ⊙ ys = ys
-(x ⊗ xs) ⊙ ys = xs ⊙ (x ⊗ ys)
-
 infix 2 _⊸_
 infix 0 _▸_⊩_⇒_
 infix 0 _▸_⊩_⇐_⟖_
 infix 0 _▸_⊢_⇒_
+
+_⊙_ : {A : Set} → List A → List A → List A
+ε ⊙ ys = ys
+(x ⊗ xs) ⊙ ys = xs ⊙ (x ⊗ ys)
 
 OName = String
 TName = Nat
