@@ -391,7 +391,33 @@ infer-face Θ Γ ϕ with ⊢infer-face Θ Γ ϕ
 … | ⊕.inl _ = no
 … | ⊕.inr (ψ ▸ _) = so ψ
 
-module Test where
+module Test₀ where
+  𝔏₀ : Signature
+  𝔏₀ =
+    let Δ = ε in
+    let Δ = ▸δ "exp" (ε ⊸ ε) ⊗ Δ in
+    Δ
+
+  𝔏₁ : Signature
+  𝔏₁ =
+    let Δ = ε in
+    let Δ = ▸δ "ap" ((ε ⊸ ovar "exp" ⊗ ε) ⊗ (ε ⊸ ovar "exp" ⊗ ε) ⊗ ε ⊸ ovar "exp" ⊗ ε) ⊗ Δ in
+    let Δ = ▸δ "λ" (((ε ⊸ ovar "exp" ⊗ ε) ⊗ ε ⊸ ovar "exp" ⊗ ε) ⊗ ε ⊸ ovar "exp" ⊗ ε) ⊗ Δ in
+    Δ
+
+  Θ : Computad
+  Θ = 𝔏₀ ⊗ 𝔏₁ ⊗ ε
+
+  ϕ : Face
+  ϕ = cut (ovar "λ") (cons (abs Ϡ (cut (ovar "ap") (cons (tvar 0) (cons (tvar 0) nil)))) nil)
+    where
+      Ϡ : Canopy
+      Ϡ = (ε ⊸ ovar "exp" ⊗ ε) ⊗ ε
+
+  τ : infer-face Θ ε ϕ ≡ so (ε ⊸ ovar "exp" ⊗ ε)
+  τ = refl
+
+module Test₁ where
   𝔏₀ : Signature
   𝔏₀ =
     let Δ = ε in
