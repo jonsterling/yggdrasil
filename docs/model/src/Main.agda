@@ -190,14 +190,35 @@ mutual
 frame-inj : ∀ {ϡ₀ ϡ₁ ϰ₀ ϰ₁} → (ϡ₀ ⊸ ϰ₀) ≡ (ϡ₁ ⊸ ϰ₁) → ϡ₀ ≡ ϡ₁ × ϰ₀ ≡ ϰ₁
 frame-inj refl = refl , refl
 
+cons-inj : ∀ {ϕ₀ ϕ₁ ω₀ ω₁} → Mesh.cons ϕ₀ ω₀ ≡ Mesh.cons ϕ₁ ω₁ → ϕ₀ ≡ ϕ₁ × ω₀ ≡ ω₁
+cons-inj refl = refl , refl
+
+cut⇔-inj : ∀ {ω₀ ω₁ ω₀′ ω₁′} → Mesh.cut⇔ ω₀ ω₁ ≡ Mesh.cut⇔ ω₀′ ω₁′ → ω₀ ≡ ω₀′ × ω₁ ≡ ω₁′
+cut⇔-inj refl = refl , refl
+
+cut⊗-inj : ∀ {ω₀ ω₁ ω₀′ ω₁′} → Mesh.cut⊗ ω₀ ω₁ ≡ Mesh.cut⊗ ω₀′ ω₁′ → ω₀ ≡ ω₀′ × ω₁ ≡ ω₁′
+cut⊗-inj refl = refl , refl
+
+cut-inj : ∀ {ϕ₀ ϕ₁ ω₀ ω₁} → Face.cut ϕ₀ ω₀ ≡ Face.cut ϕ₁ ω₁ → ϕ₀ ≡ ϕ₁ × ω₀ ≡ ω₁
+cut-inj refl = refl , refl
+
+abs-inj : ∀ {Ϡ₀ Ϡ₁ ϕ₀ ϕ₁} → Face.abs Ϡ₀ ϕ₀ ≡ Face.abs Ϡ₁ ϕ₁ → Ϡ₀ ≡ Ϡ₁ × ϕ₀ ≡ ϕ₁
+abs-inj refl = refl , refl
+
+ovar-inj : ∀ {ϑ₀ ϑ₁} → Face.ovar ϑ₀ ≡ Face.ovar ϑ₁ → ϑ₀ ≡ ϑ₁
+ovar-inj refl = refl
+
+tvar-inj : ∀ {x₀ x₁} → Face.tvar x₀ ≡ Face.tvar x₁ → x₀ ≡ x₁
+tvar-inj refl = refl
+
 mutual
   {-# TERMINATING #-}
   frame-eq : (ψ₀ ψ₁ : Frame) → Decidable (ψ₀ ≡ ψ₁)
-  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with face-eq List.⊢ ϰ₀ ≟ ϰ₁ -- FIXME: list-eq needs sized types
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with frame-eq List.⊢ ϡ₀ ≟ ϡ₁
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with face-eq List.⊢ ϰ₀ ≟ ϰ₁
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.snd Π.∘ frame-inj)
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ .ϰ₀) | ⊕.inr refl with frame-eq List.⊢ ϡ₀ ≟ ϡ₁
+  frame-eq (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ .ϰ₀) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.fst Π.∘ frame-inj)
+  frame-eq (ϡ₀ ⊸ ϰ₀) (.ϡ₀ ⊸ .ϰ₀) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
 
   mesh-eq : (ω₀ ω₁ : Mesh) → Decidable (ω₀ ≡ ω₁)
   mesh-eq nil nil = ⊕.inr refl
@@ -206,58 +227,58 @@ mutual
   mesh-eq nil (cut⇔ _ _) = ⊕.inl λ()
   mesh-eq (cons _ _) nil = ⊕.inl λ()
   mesh-eq (cons ϕ₀ ω₀) (cons ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with mesh-eq ω₀ ω₁
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  mesh-eq (cons ϕ₀ ω₀) (cons ϕ₁ ω₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.fst Π.∘ cons-inj)
+  mesh-eq (cons ϕ₀ ω₀) (cons .ϕ₀ ω₁) | ⊕.inr refl with mesh-eq ω₀ ω₁
+  mesh-eq (cons ϕ₀ ω₀) (cons .ϕ₀ ω₁) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.snd Π.∘ cons-inj)
+  mesh-eq (cons ϕ₀ ω₀) (cons .ϕ₀ .ω₀) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
   mesh-eq (cons _ _) (cut⇔ _ _) = ⊕.inl λ()
   mesh-eq (cons _ _) (cut⊗ _ _) = ⊕.inl λ()
   mesh-eq (cut⇔ _ _) nil = ⊕.inl λ()
   mesh-eq (cut⇔ _ _) (cons _ _) = ⊕.inl λ()
   mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with mesh-eq ω₁ ω₁′
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ ω₀′ ω₁′) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.fst Π.∘ cut⇔-inj)
+  mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ .ω₀ ω₁′) | ⊕.inr refl with mesh-eq ω₁ ω₁′
+  mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ .ω₀ ω₁′) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.snd Π.∘ cut⇔-inj)
+  mesh-eq (cut⇔ ω₀ ω₁) (cut⇔ .ω₀ .ω₁) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
   mesh-eq (cut⇔ _ _) (cut⊗ _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ _ _) nil = ⊕.inl λ()
   mesh-eq (cut⊗ _ _) (cons _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ _ _) (cut⇔ _ _) = ⊕.inl λ()
   mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ ω₀′ ω₁′) with mesh-eq ω₀ ω₀′
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with mesh-eq ω₁ ω₁′
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ ω₀′ ω₁′) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.fst Π.∘ cut⊗-inj)
+  mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ .ω₀ ω₁′) | ⊕.inr refl with mesh-eq ω₁ ω₁′
+  mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ .ω₀ ω₁′) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.snd Π.∘ cut⊗-inj)
+  mesh-eq (cut⊗ ω₀ ω₁) (cut⊗ .ω₀ .ω₁) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
 
   face-eq : (ϕ₀ ϕ₁ : Face) → Decidable (ϕ₀ ≡ ϕ₁)
   face-eq (cut ϕ₀ ω₀) (cut ϕ₁ ω₁) with face-eq ϕ₀ ϕ₁
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with mesh-eq ω₀ ω₁
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (cut ϕ₀ ω₀) (cut ϕ₁ ω₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.fst Π.∘ cut-inj)
+  face-eq (cut ϕ₀ ω₀) (cut .ϕ₀ ω₁) | ⊕.inr refl with mesh-eq ω₀ ω₁
+  face-eq (cut ϕ₀ ω₀) (cut .ϕ₀ ω₁) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.snd Π.∘ cut-inj)
+  face-eq (cut ϕ₀ ω₀) (cut .ϕ₀ .ω₀) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
   face-eq (cut _ _) (abs _ _) = ⊕.inl λ()
   face-eq (cut _ _) (ovar _) = ⊕.inl λ()
   face-eq (cut _ _) (tvar _) = ⊕.inl λ()
   face-eq (abs _ _) (cut _ _) = ⊕.inl λ()
   face-eq (abs Ϡ₀ ϕ₀) (abs Ϡ₁ ϕ₁) with frame-eq List.⊢ Ϡ₀ ≟ Ϡ₁
-  … | ⊕.inl κ₀ = ⊕.inl λ { refl → κ₀ refl }
-  … | ⊕.inr refl with face-eq ϕ₀ ϕ₁
-  … | ⊕.inl κ₁ = ⊕.inl λ { refl → κ₁ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (abs Ϡ₀ ϕ₀) (abs Ϡ₁ ϕ₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ ⊗.fst Π.∘ abs-inj)
+  face-eq (abs Ϡ₀ ϕ₀) (abs .Ϡ₀ ϕ₁) | ⊕.inr refl with face-eq ϕ₀ ϕ₁
+  face-eq (abs Ϡ₀ ϕ₀) (abs .Ϡ₀ ϕ₁) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl (κ₁ Π.∘ ⊗.snd Π.∘ abs-inj)
+  face-eq (abs Ϡ₀ ϕ₀) (abs .Ϡ₀ .ϕ₀) | ⊕.inr refl | ⊕.inr refl = ⊕.inr refl
   face-eq (abs _ _) (ovar _) = ⊕.inl λ()
   face-eq (abs _ _) (tvar _) = ⊕.inl λ()
   face-eq (ovar _) (cut _ _) = ⊕.inl λ()
   face-eq (ovar _) (abs _ _) = ⊕.inl λ()
   face-eq (ovar ϑ₀) (ovar ϑ₁) with ϑ₀ String.≟ ϑ₁
-  … | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (ovar ϑ₀) (ovar ϑ₁) | ⊕.inl κ = ⊕.inl (κ Π.∘ ovar-inj)
+  face-eq (ovar ϑ₀) (ovar .ϑ₀) | ⊕.inr refl = ⊕.inr refl
   face-eq (ovar _) (tvar _) = ⊕.inl λ()
   face-eq (tvar _) (cut _ _) = ⊕.inl λ()
   face-eq (tvar _) (abs _ _) = ⊕.inl λ()
   face-eq (tvar _) (ovar _) = ⊕.inl λ()
   face-eq (tvar x₀) (tvar x₁) with x₀ Nat.≟ x₁
-  … | ⊕.inl κ = ⊕.inl λ { refl → κ refl }
-  … | ⊕.inr refl = ⊕.inr refl
+  face-eq (tvar x₀) (tvar x₁) | ⊕.inl κ = ⊕.inl (κ Π.∘ tvar-inj)
+  face-eq (tvar x₀) (tvar .x₀) | ⊕.inr refl = ⊕.inr refl
 
 unique-drop- : ∀ {ϡ₀ ϡ₁ ϡ₂₀ ϡ₂₁} → Drop- ϡ₀ ϡ₁ ϡ₂₀ → Drop- ϡ₀ ϡ₁ ϡ₂₁ → ϡ₂₀ ≡ ϡ₂₁
 unique-drop- nil nil = refl
@@ -310,14 +331,21 @@ reframe ε = _ ▸ nil
 reframe ((Γ ⊸ γ) ⊗ ϡ) with reframe ϡ
 … | Δ ⊸ δ ▸ φ = Γ ⊛ Δ ⊸ γ ⊛ δ ▸ cons φ
 
+-- TODO: what should this be called?
+Drop--lemma : ∀ {ψ₀ ψ₁ ϡ₀ ϡ₁ ϡ₂} → Drop- (ψ₀ ⊗ ϡ₀) (ψ₁ ⊗ ϡ₁) ϡ₂ → ψ₀ ≡ ψ₁
+Drop--lemma (cons _) = refl
+
+Drop+-lemma : ∀ {ϕ₀ ϕ₁ ϰ₀ ϰ₁ ϡ} → Drop+ (ϕ₀ ⊗ ϰ₀) (ϕ₁ ⊗ ϰ₁) ϡ → ϕ₀ ≡ ϕ₁
+Drop+-lemma (cons _) = refl
+
 drop- : (ϡ₀ ϡ₁ : Canopy) → Decidable (Σ Canopy (Drop- ϡ₀ ϡ₁))
 drop- ϡ₀ ε = ⊕.inr (_ ▸ nil)
 drop- ε (ψ₁ ⊗ ϡ₁) = ⊕.inl λ { (_ ▸ ()) }
 drop- (ψ₀ ⊗ ϡ₀) (ψ₁ ⊗ ϡ₁) with frame-eq ψ₀ ψ₁
-… | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
-… | ⊕.inr refl with drop- ϡ₀ ϡ₁
-… | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons ρ) → κ₁ (_ ▸ ρ) }
-… | ⊕.inr (_ ▸ ρ) = ⊕.inr (_ ▸ cons ρ)
+drop- (ψ₀ ⊗ ϡ₀) (ψ₁ ⊗ ϡ₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ Drop--lemma Π.∘ Σ.snd)
+drop- (ψ₀ ⊗ ϡ₀) (.ψ₀ ⊗ ϡ₁) | ⊕.inr refl with drop- ϡ₀ ϡ₁
+drop- (ψ₀ ⊗ ϡ₀) (.ψ₀ ⊗ ϡ₁) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons ρ) → κ₁ (_ ▸ ρ) }
+drop- (ψ₀ ⊗ ϡ₀) (.ψ₀ ⊗ ϡ₁) | ⊕.inr refl | ⊕.inr (_ ▸ ρ) = ⊕.inr (_ ▸ (cons ρ))
 
 drop+ : (ϰ₀ ϰ₁ : Cluster) → Decidable (Σ Canopy (Drop+ ϰ₀ ϰ₁))
 drop+ ε ε = ⊕.inr (_ ▸ nil)
@@ -326,10 +354,11 @@ drop+ ε (ϕ₁ ⊗ ϰ₁) with drop+ ε ϰ₁
 … | ⊕.inr (_ ▸ φ) = ⊕.inr (_ ▸ ext φ)
 drop+ (ϕ₀ ⊗ ϰ₀) ε = ⊕.inl λ { (_ ▸ ()) }
 drop+ (ϕ₀ ⊗ ϰ₀) (ϕ₁ ⊗ ϰ₁) with face-eq ϕ₀ ϕ₁
-… | ⊕.inl κ₀ = ⊕.inl λ { (_ ▸ cons _) → κ₀ refl }
-… | ⊕.inr refl with drop+ ϰ₀ ϰ₁
-… | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons φ₁) → κ₁ (_ ▸ φ₁) }
-… | ⊕.inr (_ ▸ φ₁) = ⊕.inr (_ ▸ cons φ₁)
+drop+ (ϕ₀ ⊗ ϰ₀) (ϕ₁ ⊗ ϰ₁) | ⊕.inl κ₀ = ⊕.inl (κ₀ Π.∘ Drop+-lemma Π.∘ Σ.snd)
+drop+ (ϕ₀ ⊗ ϰ₀) (.ϕ₀ ⊗ ϰ₁) | ⊕.inr refl with drop+ ϰ₀ ϰ₁
+drop+ (ϕ₀ ⊗ ϰ₀) (.ϕ₀ ⊗ ϰ₁) | ⊕.inr refl | ⊕.inl κ₁ = ⊕.inl λ { (_ ▸ cons φ₁) → κ₁ (_ ▸ φ₁) }
+drop+ (ϕ₀ ⊗ ϰ₀) (.ϕ₀ ⊗ ϰ₁) | ⊕.inr refl | ⊕.inr (fst ▸ φ₁ ) = ⊕.inr (_ ▸ (cons φ₁))
+
 
 diminish : (ψ₀ ψ₁ : Frame) → Decidable (Σ Canopy (Diminish ψ₀ ψ₁))
 diminish (ϡ₀ ⊸ ϰ₀) (ϡ₁ ⊸ ϰ₁) with drop- ϡ₀ ϡ₁
